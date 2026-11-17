@@ -1,0 +1,2 @@
+ALTER TABLE tenants
+    ADD COLUMN city VARCHAR(255);

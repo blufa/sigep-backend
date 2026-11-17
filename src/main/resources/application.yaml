@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: sigep
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sigep}
+    username: ${DB_USER:blufa}
+    password: ${DB_PASSWORD:blufa}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    # true est requis : TenantFilterAspect active le filtre Hibernate tenantFilter sur l'EntityManager
+    # courant en dehors de toute transaction (avant que le repository Spring Data n'en ouvre une) ;
+    # avec open-in-view=false, Hibernate lui crée une session temporaire aussitôt refermée et le
+    # filtre ne s'applique jamais à la vraie requête — faille d'isolation confirmée par
+    # TenantIsolationFlowTest (un utilisateur de n'importe quel tenant voyait tous les tenants).
+    open-in-view: true
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+server:
+  port: ${SERVER_PORT:8085}
+
+sigep:
+  jwt:
+    secret: ${JWT_SECRET:bcmKuc7FJvT1O3sJoXPy/IBQ4JtALoyL3h+eehA0Fz7WiHGDF26jVC94S+zFsu63X90T6fsjht0bOfF/VWCbXQ==}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:480}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3100}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
