@@ -12,6 +12,7 @@ public interface MonthlyAttendanceReportRenderer {
     byte[] render(
             YearMonth month,
             List<MonthlyReportRow> rows,
+            String tenantCode,
             String ministryName,
             String serviceName,
             OrganizationLogo logo);
@@ -19,12 +20,18 @@ public interface MonthlyAttendanceReportRenderer {
     record MonthlyReportRow(
             String matricule,
             String fullName,
+            String hierarchie,
             String positionTitle,
             int workingDays,
             int presentDays,
             int lateDays,
             int absentDays,
-            int earlyDepartureDays
+            int earlyDepartureDays,
+            double totalHours
     ) {
+        /** Taux de présence de l'agent, en pourcentage (0-100). */
+        public double attendanceRate() {
+            return workingDays == 0 ? 0 : (presentDays * 100.0) / workingDays;
+        }
     }
 }

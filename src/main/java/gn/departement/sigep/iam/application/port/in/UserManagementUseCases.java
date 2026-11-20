@@ -5,6 +5,8 @@ import gn.departement.sigep.iam.domain.Role;
 import gn.departement.sigep.iam.domain.User;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+
 public interface UserManagementUseCases {
 
     User create(CreateUserCommand command);
@@ -19,6 +21,10 @@ public interface UserManagementUseCases {
 
     /** Changement par l'utilisateur lui-même : l'ancien mot de passe doit être vérifié. */
     void changeOwnPassword(Long userId, String currentPassword, String newPassword);
+
+    /** Assigné par l'administrateur : les menus que cet utilisateur peut voir — null pour lever
+     * toute restriction (il retrouve tous les menus permis par son rôle). */
+    User updateAllowedMenus(Long userId, List<String> menuKeys);
 
     record CreateUserCommand(String username, String fullName, String password, Role role) {
     }

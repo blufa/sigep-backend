@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class UserManagementService implements UserManagementUseCases {
 
@@ -51,7 +53,8 @@ public class UserManagementService implements UserManagementUseCases {
                 passwordEncoder.encode(command.password()),
                 command.fullName(),
                 command.role(),
-                true
+                true,
+                null
         );
         return repository.save(user);
     }
@@ -77,6 +80,15 @@ public class UserManagementService implements UserManagementUseCases {
         save(user, newPassword);
     }
 
+    @Override
+    public User updateAllowedMenus(Long userId, List<String> menuKeys) {
+        User user = getOrThrow(userId);
+        User updated = new User(
+                user.id(), user.tenantId(), user.username(), user.passwordHash(), user.fullName(),
+                user.role(), user.active(), menuKeys);
+        return repository.save(updated);
+    }
+
     private User getOrThrow(Long userId) {
         return repository.findById(userId).orElseThrow(() -> NotFoundException.of("Utilisateur", userId));
     }
@@ -84,6 +96,6 @@ public class UserManagementService implements UserManagementUseCases {
     private void save(User user, String newPassword) {
         repository.save(new User(
                 user.id(), user.tenantId(), user.username(),
-                passwordEncoder.encode(newPassword), user.fullName(), user.role(), user.active()));
+                passwordEncoder.encode(newPassword), user.fullName(), user.role(), user.active(), user.allowedMenus()));
     }
 }

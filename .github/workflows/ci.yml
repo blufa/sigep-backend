@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches-ignore: [develop, main]
+    branches-ignore: [develop, master]
 
 jobs:
   build-test:

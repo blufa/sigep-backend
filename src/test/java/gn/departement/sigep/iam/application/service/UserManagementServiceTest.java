@@ -11,6 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import java.util.List;
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,5 +56,27 @@ class UserManagementServiceTest {
     void createForTenantRejectsSuperAdminRole() {
         assertThatThrownBy(() -> service.createForTenant(7L, new CreateUserCommand("x", "X", "password123", Role.SUPER_ADMIN)))
                 .isInstanceOf(BusinessRuleException.class);
+    }
+
+    @Test
+    void updateAllowedMenusRestrictsToGivenKeys() {
+        User existing = new User(5L, 1L, "dg", "hash", "Directeur Général", Role.ADMIN, true, null);
+        when(repository.findById(5L)).thenReturn(Optional.of(existing));
+        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User updated = service.updateAllowedMenus(5L, List.of("dashboard"));
+
+        assertThat(updated.allowedMenus()).containsExactly("dashboard");
+    }
+
+    @Test
+    void updateAllowedMenusClearsRestrictionWhenNull() {
+        User existing = new User(5L, 1L, "dg", "hash", "Directeur Général", Role.ADMIN, true, List.of("dashboard"));
+        when(repository.findById(5L)).thenReturn(Optional.of(existing));
+        when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User updated = service.updateAllowedMenus(5L, null);
+
+        assertThat(updated.allowedMenus()).isNull();
     }
 }

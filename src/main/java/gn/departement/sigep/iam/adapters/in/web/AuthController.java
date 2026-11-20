@@ -31,7 +31,8 @@ public class AuthController {
                 result.userId(),
                 result.tenantId(),
                 result.fullName(),
-                result.role()
+                result.role(),
+                result.allowedMenus()
         );
     }
 }

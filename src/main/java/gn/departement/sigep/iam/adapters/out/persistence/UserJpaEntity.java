@@ -45,4 +45,9 @@ class UserJpaEntity {
 
     @Column(nullable = false)
     private Boolean active = true;
+
+    /** Clés de menu séparées par des virgules (ex. "dashboard,attendance") ; null = aucune
+     * restriction. Voir {@code UserRepositoryAdapter} pour la conversion depuis/vers List<String>. */
+    @Column(name = "allowed_menus")
+    private String allowedMenus;
 }
