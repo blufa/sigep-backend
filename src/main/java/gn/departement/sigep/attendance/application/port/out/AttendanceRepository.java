@@ -26,4 +26,6 @@ public interface AttendanceRepository {
 
     /** Pour la liste d'historique — savoir quels pointages ont une photo, sans charger les binaires. */
     List<Long> findPunchIdsWithPhoto(List<Long> punchIds);
+
+    void setFlagged(Long punchId, boolean flagged);
 }

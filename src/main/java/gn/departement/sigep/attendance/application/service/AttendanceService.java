@@ -100,18 +100,23 @@ public class AttendanceService implements AttendanceUseCases {
                 .orElse(Direction.ENTREE);
 
         AttendancePunch punch = new AttendancePunch(
-                null, TenantContext.get(), employee.id(), badgeId, direction, now, source);
+                null, TenantContext.get(), employee.id(), badgeId, direction, now, source, false);
         AttendancePunch saved = attendanceRepository.save(punch);
         if (photo != null && photo.length > 0) {
             attendanceRepository.savePunchPhoto(saved.id(), photo, photoContentType);
         }
 
-        return new ScanResult(employee.id(), employee.matricule(), fullName(employee), direction, now);
+        return new ScanResult(saved.id(), employee.id(), employee.matricule(), fullName(employee), direction, now, false);
     }
 
     @Override
     public Optional<AttendancePunchPhoto> getPunchPhoto(Long punchId) {
         return attendanceRepository.findPunchPhoto(punchId);
+    }
+
+    @Override
+    public void flagPunch(Long punchId, boolean flagged) {
+        attendanceRepository.setFlagged(punchId, flagged);
     }
 
     @Override
@@ -274,7 +279,7 @@ public class AttendanceService implements AttendanceUseCases {
         String fullName = employee != null ? fullName(employee) : "Employé supprimé";
         return new AttendanceEntry(
                 punch.id(), punch.employeeId(), matricule, fullName, punch.direction(), punch.scannedAt(),
-                punch.source(), hasPhoto);
+                punch.source(), hasPhoto, punch.flagged());
     }
 
     private String fullName(Employee employee) {

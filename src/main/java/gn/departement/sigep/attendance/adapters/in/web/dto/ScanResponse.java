@@ -6,6 +6,7 @@ import gn.departement.sigep.attendance.domain.Direction;
 import java.time.Instant;
 
 public record ScanResponse(
+        Long id,
         Long employeeId,
         String matricule,
         String fullName,
@@ -15,6 +16,6 @@ public record ScanResponse(
 
     public static ScanResponse from(AttendanceUseCases.ScanResult result) {
         return new ScanResponse(
-                result.employeeId(), result.matricule(), result.fullName(), result.direction(), result.scannedAt());
+                result.id(), result.employeeId(), result.matricule(), result.fullName(), result.direction(), result.scannedAt());
     }
 }

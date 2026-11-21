@@ -32,12 +32,19 @@ public interface AttendanceUseCases {
     /** Photo prise au moment d'un pointage donné, pour la revue à distance par le directeur. */
     Optional<AttendancePunchPhoto> getPunchPhoto(Long punchId);
 
+    /** Signale (ou retire le signalement d') un pointage comme suspect — voir {@code flagged} sur
+     * {@link ScanResult}/{@link AttendanceEntry} : le vigile déclenche ça depuis l'écran de scan
+     * quand la photo caméra ne correspond visiblement pas à la photo officielle de l'employé. */
+    void flagPunch(Long punchId, boolean flagged);
+
     record ScanResult(
+            Long id,
             Long employeeId,
             String matricule,
             String fullName,
             Direction direction,
-            Instant scannedAt
+            Instant scannedAt,
+            boolean flagged
     ) {
     }
 
@@ -49,7 +56,8 @@ public interface AttendanceUseCases {
             Direction direction,
             Instant scannedAt,
             String source,
-            boolean hasPhoto
+            boolean hasPhoto,
+            boolean flagged
     ) {
     }
 

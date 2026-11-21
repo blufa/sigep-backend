@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -45,6 +46,11 @@ public class AttendanceController {
     @PostMapping("/scan-manual")
     public ScanResponse scanManual(@Valid @RequestBody ManualScanRequest request) {
         return ScanResponse.from(useCases.scanManual(request.employeeId(), "MANUEL"));
+    }
+
+    @PutMapping("/{id}/flag")
+    public void flag(@PathVariable Long id, @RequestParam(defaultValue = "true") boolean flagged) {
+        useCases.flagPunch(id, flagged);
     }
 
     @GetMapping("/{id}/photo")
