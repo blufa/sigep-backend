@@ -1,5 +1,7 @@
 package gn.departement.sigep.iam.application.port.in;
 
+import java.util.List;
+
 public interface LoginUseCase {
 
     LoginResult login(LoginCommand command);
@@ -13,7 +15,8 @@ public interface LoginUseCase {
             Long userId,
             Long tenantId,
             String fullName,
-            String role
+            String role,
+            List<String> allowedMenus
     ) {
     }
 }

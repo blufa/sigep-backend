@@ -10,6 +10,7 @@ import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.Rectangle;
+import com.lowagie.text.pdf.PdfContentByte;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
@@ -68,9 +69,16 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         try {
             Document document = new Document(new Rectangle(CARD_WIDTH, CARD_HEIGHT), 0, 0, 0, 0);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            PdfWriter.getInstance(document, out);
+            PdfWriter writer = PdfWriter.getInstance(document, out);
             document.open();
-            document.add(buildCard(card, photo, logo, CARD_WIDTH));
+            // Écriture directe à coordonnées absolues (comme renderSheet, voir son commentaire) plutôt
+            // que document.add(table) : ce dernier ajoute une marge/interligne implicite (spacing par
+            // défaut du pipeline de mise en page de Document) qui suffisait à dépasser CARD_HEIGHT une
+            // fois le pied de carte calé pile sur le bord bas (voir le correctif d'espaceur dans
+            // buildCard) — le pied de carte se retrouvait alors rejeté seul sur une 2e page, invisible
+            // (page blanche) tant qu'on ne compte pas les pages du PDF généré.
+            buildCard(card, photo, logo, CARD_WIDTH).writeSelectedRows(0, -1, 0, CARD_HEIGHT, writer.getDirectContent());
+            writer.setPageEmpty(false);
             document.close();
             return out.toByteArray();
         } catch (DocumentException e) {
@@ -78,31 +86,51 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         }
     }
 
+    /** Marge de page et espacement entre cartes, planche (grille d'impression sur bristol A4). */
+    private static final float SHEET_MARGIN = 20f;
+    private static final float SHEET_GAP = 12f;
+
+    /**
+     * Grille de cartes sur A4 : chaque carte est écrite à sa position absolue
+     * ({@link PdfPTable#writeSelectedRows}) sur le contenu direct de la page, plutôt
+     * qu'imbriquée comme cellule d'une table englobante. Imbriquer {@code buildCard(...)}
+     * (table à largeur verrouillée sur {@code CARD_WIDTH}) dans une {@link PdfPCell} d'une
+     * table à {@code setWidthPercentage(100)} compressait silencieusement sa hauteur
+     * calculée (mesuré : 64,5mm au lieu de 85,6mm pour un contenu identique à
+     * {@link #renderSingle}, carte visiblement "aplatie" sur la planche) — un travers connu
+     * d'OpenPDF/iText sur le calcul de hauteur des tables imbriquées. L'écriture directe à
+     * coordonnées absolues réutilise exactement le même rendu que {@link #renderSingle},
+     * déjà validé à la taille CR80 exacte.
+     */
     @Override
     public byte[] renderSheet(List<CardWithPhoto> cards, OrganizationLogo logo) {
         try {
-            Document document = new Document(PageSize.A4, 20, 20, 20, 20);
+            Document document = new Document(PageSize.A4, SHEET_MARGIN, SHEET_MARGIN, SHEET_MARGIN, SHEET_MARGIN);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            PdfWriter.getInstance(document, out);
+            PdfWriter writer = PdfWriter.getInstance(document, out);
             document.open();
+            PdfContentByte canvas = writer.getDirectContent();
 
-            PdfPTable sheet = new PdfPTable(SHEET_COLUMNS);
-            sheet.setWidthPercentage(100);
-            for (CardWithPhoto card : cards) {
-                PdfPCell wrapper = new PdfPCell(buildCard(card.card(), card.photo(), logo, CARD_WIDTH));
-                wrapper.setPadding(6f);
-                wrapper.setBorderColor(Color.LIGHT_GRAY);
-                sheet.addCell(wrapper);
-            }
-            int remainder = cards.size() % SHEET_COLUMNS;
-            if (remainder != 0) {
-                for (int i = remainder; i < SHEET_COLUMNS; i++) {
-                    PdfPCell empty = new PdfPCell();
-                    empty.setBorder(Rectangle.NO_BORDER);
-                    sheet.addCell(empty);
+            float pageHeight = PageSize.A4.getHeight();
+            int rowsPerPage = Math.max(1, (int) Math.floor((pageHeight - 2 * SHEET_MARGIN + SHEET_GAP) / (CARD_HEIGHT + SHEET_GAP)));
+            int perPage = SHEET_COLUMNS * rowsPerPage;
+
+            for (int i = 0; i < cards.size(); i++) {
+                int positionOnPage = i % perPage;
+                if (i > 0 && positionOnPage == 0) {
+                    document.newPage();
                 }
+                int col = positionOnPage % SHEET_COLUMNS;
+                int row = positionOnPage / SHEET_COLUMNS;
+                float x = SHEET_MARGIN + col * (CARD_WIDTH + SHEET_GAP);
+                float yTop = pageHeight - SHEET_MARGIN - row * (CARD_HEIGHT + SHEET_GAP);
+
+                CardWithPhoto card = cards.get(i);
+                PdfPTable cardTable = buildCard(card.card(), card.photo(), logo, CARD_WIDTH);
+                cardTable.writeSelectedRows(0, -1, x, yTop, canvas);
+                writer.setPageEmpty(false);
             }
-            document.add(sheet);
+
             document.close();
             return out.toByteArray();
         } catch (DocumentException e) {
@@ -110,6 +138,17 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         }
     }
 
+    /**
+     * Les cellules du corps (en-tête, identité, panneau QR) ont une hauteur AUTO (dérivée du texte),
+     * pas verrouillée comme la largeur — leur somme ne totalise naturellement qu'environ 60mm sur les
+     * 85,6mm visés. Sans correctif, le pied "BADGE AGENT" s'arrête donc à 60mm au lieu de border le
+     * bas réel de la carte : invisible sur la planche PDF seule (la page fait bien 85,6mm, mais 25mm
+     * de blanc restent sous le pied, mesuré via rendu PNG), flagrant sur une carte PVC réelle ou une
+     * planche aux cartes serrées (le bandeau de pied ne touche jamais le bord physique de la carte) —
+     * c'est la "déformation" remontée. Un espaceur de hauteur calculée (reste exact avant le pied)
+     * comble le vide, équivalent du `<div className="flex-1" />` utilisé côté front avant le pied de
+     * carte (voir sigep-ui/components/cards/id-badge.tsx et lacaeducation-ui/id-badge-portrait.tsx).
+     */
     private PdfPTable buildCard(BadgeCardView card, CardPhoto photo, OrganizationLogo logo, float width) {
         PdfPTable card_ = new PdfPTable(1);
         card_.setTotalWidth(width);
@@ -119,6 +158,19 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         card_.addCell(headerCell(card, logo));
         card_.addCell(identityCell(card, photo));
         card_.addCell(qrPanelCell(card));
+
+        float footerHeight = 50f * PX;
+        // Marge de sécurité (1pt) contre l'arrondi flottant des hauteurs de ligne calculées plus haut :
+        // un espaceur pile à la limite peut faire déborder le pied de carte d'une fraction de point,
+        // le rejetant entièrement sur une page PDF supplémentaire (voir renderSingle).
+        float spacerHeight = CARD_HEIGHT - card_.getTotalHeight() - footerHeight - 1f;
+        if (spacerHeight > 0f) {
+            PdfPCell spacer = new PdfPCell();
+            spacer.setBorder(Rectangle.NO_BORDER);
+            spacer.setFixedHeight(spacerHeight);
+            card_.addCell(spacer);
+        }
+
         card_.addCell(footerCell(card));
 
         return card_;
@@ -160,8 +212,8 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
 
         PdfPCell cell = new PdfPCell();
         cell.setBorder(Rectangle.NO_BORDER);
-        cell.setPaddingTop(10f * PX);
-        cell.setPaddingBottom(4f * PX);
+        cell.setPaddingTop(19f * PX);
+        cell.setPaddingBottom(9f * PX);
         cell.setPaddingLeft(20f * PX);
         cell.setPaddingRight(20f * PX);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -224,12 +276,12 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         photoCell.setBackgroundColor(PHOTO_BG);
         photoCell.setBorderColor(ACCENT);
         photoCell.setBorderWidth(1.5f);
-        photoCell.setFixedHeight(216f * PX);
+        photoCell.setFixedHeight(270f * PX);
         photoCell.setPadding(0f);
         if (photo.isPresent()) {
             try {
-                Image photoImage = Image.getInstance(cropToCover(photo.content(), 96, 216));
-                photoImage.scaleAbsolute(96f * PX, 216f * PX);
+                Image photoImage = Image.getInstance(cropToCover(photo.content(), 221, 270));
+                photoImage.scaleAbsolute(221f * PX, 270f * PX);
                 photoCell.addElement(photoImage);
             } catch (Exception ignored) {
                 // garde la case vide (fond uni) si l'image ne peut pas être décodée
@@ -250,7 +302,9 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         infoCell.setPaddingTop(4f * PX);
         infoCell.addElement(new Phrase(nameParts[0], firstNameFont));
         Paragraph lastName = new Paragraph(nameParts[1].toUpperCase(), lastNameFont);
-        lastName.setSpacingAfter(12f * PX);
+        // Sépare davantage "FONCTION" du nom — demande explicite : "faire descendre un peu
+        // FONCTION Directeur Général" (même ajustement que id-badge.tsx côté front).
+        lastName.setSpacingAfter(21f * PX);
         infoCell.addElement(lastName);
 
         infoCell.addElement(new Phrase("FONCTION", labelFont));
@@ -271,7 +325,7 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         panel.setWidths(new float[]{1f, 1.3f});
 
         Image qrImage = qrCodeGenerator.generatePdfImage(card.qrToken(), 200);
-        qrImage.scaleToFit(130f * PX, 130f * PX);
+        qrImage.scaleToFit(187f * PX, 187f * PX);
         PdfPCell qrCell = new PdfPCell(qrImage, false);
         qrCell.setBorder(Rectangle.NO_BORDER);
         qrCell.setBackgroundColor(Color.WHITE);
@@ -305,8 +359,8 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         wrapper.setBorder(Rectangle.NO_BORDER);
         wrapper.setPaddingLeft(20f * PX);
         wrapper.setPaddingRight(20f * PX);
-        wrapper.setPaddingTop(14f * PX);
-        wrapper.setPaddingBottom(12f * PX);
+        wrapper.setPaddingTop(22f * PX);
+        wrapper.setPaddingBottom(22f * PX);
         return wrapper;
     }
 

@@ -224,6 +224,7 @@ public class AttendanceService implements AttendanceUseCases {
             int lateDays = 0;
             int absentDays = 0;
             int earlyDepartureDays = 0;
+            double totalHours = 0;
 
             for (LocalDate day : workingDays) {
                 List<AttendancePunch> dayPunches = punchesByDay.get(day);
@@ -240,11 +241,13 @@ public class AttendanceService implements AttendanceUseCases {
                 if (firstEntree != null && firstEntree.atZone(ZONE).toLocalTime().isAfter(workStart)) {
                     lateDays++;
                 }
-                if (workEnd != null) {
-                    AttendancePunch last = dayPunches.stream().max(Comparator.comparing(AttendancePunch::scannedAt)).orElse(null);
-                    if (last != null && last.direction() == Direction.SORTIE
-                            && last.scannedAt().atZone(ZONE).toLocalTime().isBefore(workEnd)) {
+                AttendancePunch last = dayPunches.stream().max(Comparator.comparing(AttendancePunch::scannedAt)).orElse(null);
+                if (last != null && last.direction() == Direction.SORTIE) {
+                    if (workEnd != null && last.scannedAt().atZone(ZONE).toLocalTime().isBefore(workEnd)) {
                         earlyDepartureDays++;
+                    }
+                    if (firstEntree != null) {
+                        totalHours += java.time.Duration.between(firstEntree, last.scannedAt()).toMinutes() / 60.0;
                     }
                 }
             }
@@ -254,13 +257,13 @@ public class AttendanceService implements AttendanceUseCases {
                     : null;
 
             rows.add(new MonthlyAttendanceReportRenderer.MonthlyReportRow(
-                    employee.matricule(), fullName(employee), positionTitle,
-                    workingDays.size(), presentDays, lateDays, absentDays, earlyDepartureDays));
+                    employee.matricule(), fullName(employee), employee.hierarchie(), positionTitle,
+                    workingDays.size(), presentDays, lateDays, absentDays, earlyDepartureDays, totalHours));
         }
 
         rows.sort(Comparator.comparing(MonthlyAttendanceReportRenderer.MonthlyReportRow::fullName));
 
-        return reportRenderer.render(month, rows, organization.ministryName(), organization.serviceName(),
+        return reportRenderer.render(month, rows, organization.code(), organization.ministryName(), organization.serviceName(),
                 tenantSettingsUseCases.getLogo(TenantContext.get()));
     }
 

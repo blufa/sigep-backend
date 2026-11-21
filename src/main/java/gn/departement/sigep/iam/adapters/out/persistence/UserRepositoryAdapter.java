@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -28,6 +29,7 @@ class UserRepositoryAdapter implements UserRepository {
         entity.setFullName(user.fullName());
         entity.setRole(user.role());
         entity.setActive(user.active());
+        entity.setAllowedMenus(joinMenus(user.allowedMenus()));
         return toDomain(jpaRepository.save(entity));
     }
 
@@ -59,7 +61,19 @@ class UserRepositoryAdapter implements UserRepository {
                 entity.getPasswordHash(),
                 entity.getFullName(),
                 entity.getRole(),
-                Boolean.TRUE.equals(entity.getActive())
+                Boolean.TRUE.equals(entity.getActive()),
+                splitMenus(entity.getAllowedMenus())
         );
+    }
+
+    private String joinMenus(List<String> menus) {
+        return menus == null ? null : String.join(",", menus);
+    }
+
+    private List<String> splitMenus(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        return List.of(raw.split(","));
     }
 }

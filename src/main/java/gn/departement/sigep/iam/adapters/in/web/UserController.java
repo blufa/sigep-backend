@@ -4,6 +4,7 @@ import gn.departement.sigep.common.PageResponse;
 import gn.departement.sigep.iam.adapters.in.web.dto.ChangePasswordRequest;
 import gn.departement.sigep.iam.adapters.in.web.dto.CreateUserRequest;
 import gn.departement.sigep.iam.adapters.in.web.dto.ResetPasswordRequest;
+import gn.departement.sigep.iam.adapters.in.web.dto.UpdateUserMenusRequest;
 import gn.departement.sigep.iam.adapters.in.web.dto.UserResponse;
 import gn.departement.sigep.iam.application.port.in.UserManagementUseCases;
 import gn.departement.sigep.iam.domain.User;
@@ -58,5 +59,13 @@ public class UserController {
         Jwt jwt = authentication.getToken();
         Long userId = Long.valueOf(jwt.getSubject());
         useCases.changeOwnPassword(userId, request.currentPassword(), request.newPassword());
+    }
+
+    /** Assigne les menus visibles pour cet utilisateur — {@code menuKeys: null} lève toute
+     * restriction. Réservé à l'administrateur du service (lui seul décide qui voit quoi). */
+    @PutMapping("/{id}/menus")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserResponse updateMenus(@PathVariable Long id, @RequestBody UpdateUserMenusRequest request) {
+        return UserResponse.from(useCases.updateAllowedMenus(id, request.menuKeys()));
     }
 }

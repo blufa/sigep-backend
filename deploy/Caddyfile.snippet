@@ -1,0 +1,30 @@
+# À AJOUTER au Caddyfile du proxy déjà en place sur le VPS (celui qui sert lacaeducation sous
+# jeccamtech.com — /opt/lacaeducation/proxy/Caddyfile), PAS un nouveau proxy. Après édition :
+#   docker exec proxy-caddy caddy reload --config /etc/caddy/Caddyfile
+
+# ---- sigep — PRODUCTION ----
+infrastructure.jeccamtech.com {
+	encode zstd gzip
+	reverse_proxy sigep-prod-frontend:3100
+}
+api.infrastructure.jeccamtech.com {
+	encode zstd gzip
+	# Upload photo employé/badge (voir application.yaml : multipart max 5 Mo) — marge au-dessus.
+	request_body {
+		max_size 10MB
+	}
+	reverse_proxy sigep-prod-backend:8085
+}
+
+# ---- sigep — DEV / STAGING ----
+dev.infrastructure.jeccamtech.com {
+	encode zstd gzip
+	reverse_proxy sigep-dev-frontend:3100
+}
+api-dev.infrastructure.jeccamtech.com {
+	encode zstd gzip
+	request_body {
+		max_size 10MB
+	}
+	reverse_proxy sigep-dev-backend:8085
+}

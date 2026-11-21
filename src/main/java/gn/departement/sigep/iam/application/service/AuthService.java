@@ -40,7 +40,8 @@ public class AuthService implements LoginUseCase {
                 user.id(),
                 user.tenantId(),
                 user.fullName(),
-                user.role().name()
+                user.role().name(),
+                user.allowedMenus()
         );
     }
 }
