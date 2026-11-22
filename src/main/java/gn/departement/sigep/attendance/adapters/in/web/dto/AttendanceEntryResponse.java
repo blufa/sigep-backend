@@ -13,12 +13,13 @@ public record AttendanceEntryResponse(
         Direction direction,
         Instant scannedAt,
         String source,
-        boolean hasPhoto
+        boolean hasPhoto,
+        boolean flagged
 ) {
 
     public static AttendanceEntryResponse from(AttendanceUseCases.AttendanceEntry entry) {
         return new AttendanceEntryResponse(
                 entry.id(), entry.employeeId(), entry.matricule(), entry.fullName(),
-                entry.direction(), entry.scannedAt(), entry.source(), entry.hasPhoto());
+                entry.direction(), entry.scannedAt(), entry.source(), entry.hasPhoto(), entry.flagged());
     }
 }

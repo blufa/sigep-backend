@@ -1,0 +1,1 @@
+ALTER TABLE attendance_punches ADD COLUMN flagged BOOLEAN NOT NULL DEFAULT FALSE;

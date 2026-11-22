@@ -69,7 +69,7 @@ class AttendanceServiceTest {
     void secondScanOfTheDayIsSortie() {
         mockActiveEmployeeWithBadge();
         AttendancePunch previousEntree = new AttendancePunch(
-                1L, 1L, EMPLOYEE_ID, 1L, Direction.ENTREE, Instant.now().minusSeconds(3600), "QR");
+                1L, 1L, EMPLOYEE_ID, 1L, Direction.ENTREE, Instant.now().minusSeconds(3600), "QR", false);
         when(attendanceRepository.findLastByEmployeeIdAndScannedAtBetween(any(), any(), any()))
                 .thenReturn(Optional.of(previousEntree));
         when(attendanceRepository.save(any(AttendancePunch.class))).thenAnswer(i -> i.getArgument(0));

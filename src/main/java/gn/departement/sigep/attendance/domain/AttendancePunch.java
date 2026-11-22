@@ -9,6 +9,7 @@ public record AttendancePunch(
         Long badgeId,
         Direction direction,
         Instant scannedAt,
-        String source
+        String source,
+        boolean flagged
 ) {
 }

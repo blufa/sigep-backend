@@ -3,6 +3,7 @@ package gn.departement.sigep.attendance.adapters.out.persistence;
 import gn.departement.sigep.attendance.application.port.out.AttendanceRepository;
 import gn.departement.sigep.attendance.domain.AttendancePunch;
 import gn.departement.sigep.attendance.domain.AttendancePunchPhoto;
+import gn.departement.sigep.common.TenantContext;
 import gn.departement.sigep.common.exception.NotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -76,5 +77,14 @@ class AttendancePersistenceAdapter implements AttendanceRepository {
             return List.of();
         }
         return jpaRepository.findIdsWithPhoto(punchIds);
+    }
+
+    @Override
+    public void setFlagged(Long punchId, boolean flagged) {
+        AttendancePunchJpaEntity entity = jpaRepository.findById(punchId)
+                .filter(e -> e.getTenantId().equals(TenantContext.get()))
+                .orElseThrow(() -> NotFoundException.of("Pointage", punchId));
+        entity.setFlagged(flagged);
+        jpaRepository.save(entity);
     }
 }

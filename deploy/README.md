@@ -258,3 +258,5 @@ docker logs sigep-prod-backend --tail 50    # erreurs éventuelles au démarrage
 Ouvre enfin `https://infrastructure.jeccamtech.com` dans un navigateur : connecte-toi avec
 `admin` / `password` (compte créé par défaut au premier démarrage, voir `V6__seed.sql`) — et
 change ce mot de passe immédiatement une fois connecté.
+
+<!-- test-deploy: valider le pipeline develop (claude 2026-11-21T00:48Z) -->

@@ -52,4 +52,9 @@ class AttendancePunchJpaEntity {
 
     @Column(name = "photo_content_type")
     private String photoContentType;
+
+    /** Signalé par le vigile comme suspect (photo caméra ne correspondant pas à la photo officielle
+     * — badge probablement laissé par un employé absent) — voir page Utilisateurs > historique. */
+    @Column(nullable = false)
+    private boolean flagged;
 }
