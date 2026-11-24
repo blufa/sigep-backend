@@ -53,6 +53,11 @@ class UserRepositoryAdapter implements UserRepository {
         return jpaRepository.findAll(pageable).map(this::toDomain);
     }
 
+    @Override
+    public Page<User> search(String query, Pageable pageable) {
+        return jpaRepository.search(query, pageable).map(this::toDomain);
+    }
+
     private User toDomain(UserJpaEntity entity) {
         return new User(
                 entity.getId(),

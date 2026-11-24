@@ -14,7 +14,9 @@ public interface UserManagementUseCases {
     /** Créé par un SUPER_ADMIN pour un service (tenant) donné, hors du TenantContext courant. */
     User createForTenant(Long tenantId, CreateUserCommand command);
 
-    PageResponse<User> list(Pageable pageable);
+    /** @param query recherche par identifiant/nom complet — {@code null} ou vide pour lister tous
+     *               les utilisateurs sans filtre. */
+    PageResponse<User> list(String query, Pageable pageable);
 
     /** Réinitialisation par un administrateur : pas besoin de l'ancien mot de passe. */
     void resetPassword(Long userId, String newPassword);
