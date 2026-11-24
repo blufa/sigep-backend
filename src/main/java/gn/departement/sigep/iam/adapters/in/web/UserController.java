@@ -5,6 +5,7 @@ import gn.departement.sigep.iam.adapters.in.web.dto.ChangePasswordRequest;
 import gn.departement.sigep.iam.adapters.in.web.dto.CreateUserRequest;
 import gn.departement.sigep.iam.adapters.in.web.dto.ResetPasswordRequest;
 import gn.departement.sigep.iam.adapters.in.web.dto.UpdateUserMenusRequest;
+import gn.departement.sigep.iam.adapters.in.web.dto.UpdateUsernameRequest;
 import gn.departement.sigep.iam.adapters.in.web.dto.UserResponse;
 import gn.departement.sigep.iam.application.port.in.UserManagementUseCases;
 import gn.departement.sigep.iam.domain.User;
@@ -45,7 +46,7 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse create(@Valid @RequestBody CreateUserRequest request) {
         User user = useCases.create(new UserManagementUseCases.CreateUserCommand(
-                request.username(), request.fullName(), request.password(), request.role()));
+                request.username(), request.fullName(), request.password(), request.role(), request.employeeId()));
         return UserResponse.from(user);
     }
 
@@ -53,6 +54,14 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public void resetPassword(@PathVariable Long id, @Valid @RequestBody ResetPasswordRequest request) {
         useCases.resetPassword(id, request.newPassword());
+    }
+
+    /** Corrige l'identifiant d'un compte existant (ex. téléphone mal normalisé à la création —
+     * espaces, tirets — rendant la connexion impossible pour l'utilisateur concerné). */
+    @PutMapping("/{id}/username")
+    @PreAuthorize("hasRole('ADMIN')")
+    public UserResponse updateUsername(@PathVariable Long id, @Valid @RequestBody UpdateUsernameRequest request) {
+        return UserResponse.from(useCases.updateUsername(id, request.username()));
     }
 
     @PutMapping("/me/password")

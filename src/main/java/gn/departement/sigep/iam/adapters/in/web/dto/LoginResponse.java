@@ -10,6 +10,7 @@ public record LoginResponse(
         Long tenantId,
         String fullName,
         String role,
-        List<String> allowedMenus
+        List<String> allowedMenus,
+        String positionTitle
 ) {
 }

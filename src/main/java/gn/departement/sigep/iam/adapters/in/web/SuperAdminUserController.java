@@ -27,7 +27,7 @@ public class SuperAdminUserController {
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public UserResponse create(@PathVariable Long tenantId, @Valid @RequestBody CreateUserRequest request) {
         User user = useCases.createForTenant(tenantId, new UserManagementUseCases.CreateUserCommand(
-                request.username(), request.fullName(), request.password(), request.role()));
+                request.username(), request.fullName(), request.password(), request.role(), request.employeeId()));
         return UserResponse.from(user);
     }
 }

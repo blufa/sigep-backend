@@ -16,7 +16,10 @@ public interface LoginUseCase {
             Long tenantId,
             String fullName,
             String role,
-            List<String> allowedMenus
+            List<String> allowedMenus,
+            /** Poste de l'employé lié (voir {@code User.employeeId}) — {@code null} si le compte
+             * n'est rattaché à aucun employé, ou que cet employé n'a pas de poste renseigné. */
+            String positionTitle
     ) {
     }
 }

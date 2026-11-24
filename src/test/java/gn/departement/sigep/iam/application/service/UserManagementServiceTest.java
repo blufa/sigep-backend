@@ -35,7 +35,7 @@ class UserManagementServiceTest {
     void createRejectsSuperAdminRole() {
         TenantContext.set(1L);
 
-        assertThatThrownBy(() -> service.create(new CreateUserCommand("x", "X", "password123", Role.SUPER_ADMIN)))
+        assertThatThrownBy(() -> service.create(new CreateUserCommand("x", "X", "password123", Role.SUPER_ADMIN, null)))
                 .isInstanceOf(BusinessRuleException.class);
     }
 
@@ -45,7 +45,7 @@ class UserManagementServiceTest {
         when(repository.existsByUsername("directeur")).thenReturn(false);
         when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        User created = service.createForTenant(7L, new CreateUserCommand("directeur", "Directeur", "password123", Role.ADMIN));
+        User created = service.createForTenant(7L, new CreateUserCommand("directeur", "Directeur", "password123", Role.ADMIN, null));
 
         assertThat(created.tenantId()).isEqualTo(7L);
         assertThat(created.role()).isEqualTo(Role.ADMIN);
@@ -54,13 +54,13 @@ class UserManagementServiceTest {
 
     @Test
     void createForTenantRejectsSuperAdminRole() {
-        assertThatThrownBy(() -> service.createForTenant(7L, new CreateUserCommand("x", "X", "password123", Role.SUPER_ADMIN)))
+        assertThatThrownBy(() -> service.createForTenant(7L, new CreateUserCommand("x", "X", "password123", Role.SUPER_ADMIN, null)))
                 .isInstanceOf(BusinessRuleException.class);
     }
 
     @Test
     void updateAllowedMenusRestrictsToGivenKeys() {
-        User existing = new User(5L, 1L, "dg", "hash", "Directeur Général", Role.ADMIN, true, null);
+        User existing = new User(5L, 1L, "dg", "hash", "Directeur Général", Role.ADMIN, true, null, null);
         when(repository.findById(5L)).thenReturn(Optional.of(existing));
         when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -71,7 +71,7 @@ class UserManagementServiceTest {
 
     @Test
     void updateAllowedMenusClearsRestrictionWhenNull() {
-        User existing = new User(5L, 1L, "dg", "hash", "Directeur Général", Role.ADMIN, true, List.of("dashboard"));
+        User existing = new User(5L, 1L, "dg", "hash", "Directeur Général", Role.ADMIN, true, List.of("dashboard"), null);
         when(repository.findById(5L)).thenReturn(Optional.of(existing));
         when(repository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
