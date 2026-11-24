@@ -205,14 +205,14 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
             "SERVICE NATIONAL DES INFRASTRUCTURES, ÉQUIPEMENTS SCOLAIRES ET MAINTENANCE";
 
     private PdfPCell headerCell(BadgeCardView card, OrganizationLogo logo) {
-        Font countryFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15f * PX, INK);
-        Font mottoFont = FontFactory.getFont(FontFactory.HELVETICA, 11f * PX, MUTED);
-        Font ministryFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12f * PX, INK);
-        Font serviceFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11f * PX, ACCENT);
+        Font countryFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 23.4f * PX, INK);
+        Font mottoFont = FontFactory.getFont(FontFactory.HELVETICA, 18f * PX, MUTED);
+        Font ministryFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18.9f * PX, INK);
+        Font serviceFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, ACCENT);
 
         PdfPCell cell = new PdfPCell();
         cell.setBorder(Rectangle.NO_BORDER);
-        cell.setPaddingTop(19f * PX);
+        cell.setPaddingTop(12f * PX);
         cell.setPaddingBottom(9f * PX);
         cell.setPaddingLeft(20f * PX);
         cell.setPaddingRight(20f * PX);
@@ -289,10 +289,10 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         }
         identity.addCell(photoCell);
 
-        Font firstNameFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 24f * PX, MUTED);
-        Font lastNameFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 24f * PX, INK);
-        Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10f * PX, MUTED);
-        Font valueFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15f * PX, INK);
+        Font firstNameFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 32.4f * PX, MUTED);
+        Font lastNameFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 32.4f * PX, INK);
+        Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, MUTED);
+        Font valueFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 23.4f * PX, INK);
 
         String[] nameParts = splitFullName(card.fullName());
 
@@ -304,7 +304,7 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         Paragraph lastName = new Paragraph(nameParts[1].toUpperCase(), lastNameFont);
         // Sépare davantage "FONCTION" du nom — demande explicite : "faire descendre un peu
         // FONCTION Directeur Général" (même ajustement que id-badge.tsx côté front).
-        lastName.setSpacingAfter(21f * PX);
+        lastName.setSpacingAfter(13f * PX);
         infoCell.addElement(lastName);
 
         infoCell.addElement(new Phrase("FONCTION", labelFont));
@@ -334,10 +334,10 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         qrCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         panel.addCell(qrCell);
 
-        Font instructionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13f * PX, INK);
-        Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9f * PX, MUTED);
-        Font valueFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13f * PX, INK);
-        Font matriculeFont = FontFactory.getFont(FontFactory.COURIER_BOLD, 13f * PX, INK);
+        Font instructionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 21.6f * PX, INK);
+        Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, MUTED);
+        Font valueFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 21.6f * PX, INK);
+        Font matriculeFont = FontFactory.getFont(FontFactory.COURIER_BOLD, 25.2f * PX, INK);
 
         PdfPCell textCell = new PdfPCell();
         textCell.setBorder(Rectangle.NO_BORDER);
@@ -359,8 +359,8 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         wrapper.setBorder(Rectangle.NO_BORDER);
         wrapper.setPaddingLeft(20f * PX);
         wrapper.setPaddingRight(20f * PX);
-        wrapper.setPaddingTop(22f * PX);
-        wrapper.setPaddingBottom(22f * PX);
+        wrapper.setPaddingTop(13f * PX);
+        wrapper.setPaddingBottom(13f * PX);
         return wrapper;
     }
 
@@ -368,8 +368,8 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         PdfPTable footer = new PdfPTable(2);
         footer.setWidthPercentage(100);
 
-        Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15f * PX, Color.WHITE);
-        Font cityFont = FontFactory.getFont(FontFactory.HELVETICA, 11f * PX, Color.WHITE);
+        Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 27.9f * PX, Color.WHITE);
+        Font cityFont = FontFactory.getFont(FontFactory.HELVETICA, 18f * PX, Color.WHITE);
 
         PdfPCell title = new PdfPCell(new Phrase("BADGE AGENT", titleFont));
         title.setBorder(Rectangle.NO_BORDER);
