@@ -37,6 +37,7 @@ public interface EmployeeUseCases {
     }
 
     record UpdateEmployeeCommand(
+            String matricule,
             String lastName,
             String firstName,
             String hierarchie,

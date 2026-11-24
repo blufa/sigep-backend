@@ -59,7 +59,7 @@ public class EmployeeController {
     @PreAuthorize("hasRole('ADMIN')")
     public EmployeeResponse update(@PathVariable Long id, @Valid @RequestBody EmployeeRequest request) {
         EmployeeUseCases.UpdateEmployeeCommand command = new EmployeeUseCases.UpdateEmployeeCommand(
-                request.lastName(), request.firstName(), request.hierarchie(),
+                request.matricule(), request.lastName(), request.firstName(), request.hierarchie(),
                 request.genre(), request.positionId(), request.phone(), request.city(), request.active());
         return EmployeeResponse.from(useCases.update(id, command));
     }

@@ -68,10 +68,14 @@ public class EmployeeService implements EmployeeUseCases {
     @Override
     public Employee update(Long id, UpdateEmployeeCommand command) {
         Employee existing = get(id);
+        if (!command.matricule().equals(existing.matricule()) && repository.existsByMatricule(command.matricule())) {
+            throw new BusinessRuleException(
+                    "MATRICULE_TAKEN", "Ce matricule d'Etat est déjà enregistré", HttpStatus.CONFLICT);
+        }
         Employee updated = new Employee(
                 existing.id(),
                 existing.tenantId(),
-                existing.matricule(),
+                command.matricule(),
                 command.lastName(),
                 command.firstName(),
                 command.hierarchie(),
