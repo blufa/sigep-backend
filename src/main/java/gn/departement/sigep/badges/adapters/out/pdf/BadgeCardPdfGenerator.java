@@ -289,7 +289,7 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         }
         identity.addCell(photoCell);
 
-        Font firstNameFont = FontFactory.getFont(FontFactory.HELVETICA, 20f * PX, MUTED);
+        Font firstNameFont = FontFactory.getFont(FontFactory.HELVETICA, 23f * PX, MUTED);
         Font lastNameFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 24f * PX, INK);
         Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10f * PX, MUTED);
         Font valueFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15f * PX, INK);
