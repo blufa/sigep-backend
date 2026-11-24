@@ -230,7 +230,7 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
             try {
                 identityRow.setWidths(new float[]{1f, 2.6f});
                 Image logoImage = Image.getInstance(logo.content());
-                logoImage.scaleToFit(65f * PX, 65f * PX);
+                logoImage.scaleToFit(85f * PX, 85f * PX);
                 PdfPCell logoCell = new PdfPCell(logoImage, false);
                 logoCell.setBorder(Rectangle.NO_BORDER);
                 logoCell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -289,7 +289,7 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         }
         identity.addCell(photoCell);
 
-        Font firstNameFont = FontFactory.getFont(FontFactory.HELVETICA, 15f * PX, MUTED);
+        Font firstNameFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 24f * PX, MUTED);
         Font lastNameFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 24f * PX, INK);
         Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10f * PX, MUTED);
         Font valueFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 15f * PX, INK);
