@@ -193,6 +193,48 @@ public class AttendanceService implements AttendanceUseCases {
     @Override
     public byte[] generateMonthlyReportPdf(YearMonth month) {
         Tenant organization = tenantSettingsUseCases.getCurrent();
+        MonthContext ctx = buildMonthContext(month, organization);
+
+        List<Long> activeEmployeeIds = employeeRepository.findActiveEmployeeIds();
+        List<MonthlyAttendanceReportRenderer.MonthlyReportRow> rows = new ArrayList<>();
+
+        for (Long employeeId : activeEmployeeIds) {
+            Employee employee = employeeRepository.findById(employeeId).orElse(null);
+            if (employee == null) {
+                continue;
+            }
+            rows.add(computeRow(employee, ctx));
+        }
+
+        rows.sort(Comparator.comparing(MonthlyAttendanceReportRenderer.MonthlyReportRow::fullName));
+
+        return reportRenderer.render(month, rows, organization.code(), organization.ministryName(), organization.serviceName(),
+                tenantSettingsUseCases.getLogo(TenantContext.get()));
+    }
+
+    @Override
+    public byte[] generateEmployeeMonthlyReportPdf(Long employeeId, YearMonth month) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> NotFoundException.of("Employé", employeeId));
+        Tenant organization = tenantSettingsUseCases.getCurrent();
+        MonthContext ctx = buildMonthContext(month, organization);
+        List<MonthlyAttendanceReportRenderer.MonthlyReportRow> rows = List.of(computeRow(employee, ctx));
+        return reportRenderer.render(month, rows, organization.code(), organization.ministryName(), organization.serviceName(),
+                tenantSettingsUseCases.getLogo(TenantContext.get()));
+    }
+
+    /** Horaires de référence, jours ouvrables du mois (lundi-vendredi, jusqu'à aujourd'hui si le
+     * mois est en cours) et pointages du mois groupés par employé — calculés une seule fois, qu'il
+     * s'agisse du rapport global (tous les employés) ou du rapport d'un seul employé. */
+    private record MonthContext(
+            LocalTime workStart,
+            LocalTime workEnd,
+            List<LocalDate> workingDays,
+            Map<Long, List<AttendancePunch>> punchesByEmployee
+    ) {
+    }
+
+    private MonthContext buildMonthContext(YearMonth month, Tenant organization) {
         LocalTime workStart = organization.workStartTime() != null ? organization.workStartTime() : DEFAULT_WORK_START;
         LocalTime workEnd = organization.workEndTime();
 
@@ -213,63 +255,53 @@ public class AttendanceService implements AttendanceUseCases {
             }
         }
 
-        List<Long> activeEmployeeIds = employeeRepository.findActiveEmployeeIds();
-        List<MonthlyAttendanceReportRenderer.MonthlyReportRow> rows = new ArrayList<>();
+        return new MonthContext(workStart, workEnd, workingDays, punchesByEmployee);
+    }
 
-        for (Long employeeId : activeEmployeeIds) {
-            Employee employee = employeeRepository.findById(employeeId).orElse(null);
-            if (employee == null) {
+    private MonthlyAttendanceReportRenderer.MonthlyReportRow computeRow(Employee employee, MonthContext ctx) {
+        List<AttendancePunch> punches = ctx.punchesByEmployee().getOrDefault(employee.id(), List.of());
+        Map<LocalDate, List<AttendancePunch>> punchesByDay = punches.stream()
+                .collect(java.util.stream.Collectors.groupingBy(p -> p.scannedAt().atZone(ZONE).toLocalDate()));
+
+        int presentDays = 0;
+        int lateDays = 0;
+        int absentDays = 0;
+        int earlyDepartureDays = 0;
+        double totalHours = 0;
+
+        for (LocalDate day : ctx.workingDays()) {
+            List<AttendancePunch> dayPunches = punchesByDay.get(day);
+            if (dayPunches == null || dayPunches.isEmpty()) {
+                absentDays++;
                 continue;
             }
-            List<AttendancePunch> punches = punchesByEmployee.getOrDefault(employeeId, List.of());
-            Map<LocalDate, List<AttendancePunch>> punchesByDay = punches.stream()
-                    .collect(java.util.stream.Collectors.groupingBy(p -> p.scannedAt().atZone(ZONE).toLocalDate()));
-
-            int presentDays = 0;
-            int lateDays = 0;
-            int absentDays = 0;
-            int earlyDepartureDays = 0;
-            double totalHours = 0;
-
-            for (LocalDate day : workingDays) {
-                List<AttendancePunch> dayPunches = punchesByDay.get(day);
-                if (dayPunches == null || dayPunches.isEmpty()) {
-                    absentDays++;
-                    continue;
+            presentDays++;
+            Instant firstEntree = dayPunches.stream()
+                    .filter(p -> p.direction() == Direction.ENTREE)
+                    .map(AttendancePunch::scannedAt)
+                    .min(Comparator.naturalOrder())
+                    .orElse(null);
+            if (firstEntree != null && firstEntree.atZone(ZONE).toLocalTime().isAfter(ctx.workStart())) {
+                lateDays++;
+            }
+            AttendancePunch last = dayPunches.stream().max(Comparator.comparing(AttendancePunch::scannedAt)).orElse(null);
+            if (last != null && last.direction() == Direction.SORTIE) {
+                if (ctx.workEnd() != null && last.scannedAt().atZone(ZONE).toLocalTime().isBefore(ctx.workEnd())) {
+                    earlyDepartureDays++;
                 }
-                presentDays++;
-                Instant firstEntree = dayPunches.stream()
-                        .filter(p -> p.direction() == Direction.ENTREE)
-                        .map(AttendancePunch::scannedAt)
-                        .min(Comparator.naturalOrder())
-                        .orElse(null);
-                if (firstEntree != null && firstEntree.atZone(ZONE).toLocalTime().isAfter(workStart)) {
-                    lateDays++;
-                }
-                AttendancePunch last = dayPunches.stream().max(Comparator.comparing(AttendancePunch::scannedAt)).orElse(null);
-                if (last != null && last.direction() == Direction.SORTIE) {
-                    if (workEnd != null && last.scannedAt().atZone(ZONE).toLocalTime().isBefore(workEnd)) {
-                        earlyDepartureDays++;
-                    }
-                    if (firstEntree != null) {
-                        totalHours += java.time.Duration.between(firstEntree, last.scannedAt()).toMinutes() / 60.0;
-                    }
+                if (firstEntree != null) {
+                    totalHours += java.time.Duration.between(firstEntree, last.scannedAt()).toMinutes() / 60.0;
                 }
             }
-
-            String positionTitle = employee.positionId() != null
-                    ? positionRepository.findById(employee.positionId()).map(Position::title).orElse(null)
-                    : null;
-
-            rows.add(new MonthlyAttendanceReportRenderer.MonthlyReportRow(
-                    employee.matricule(), fullName(employee), employee.hierarchie(), positionTitle,
-                    workingDays.size(), presentDays, lateDays, absentDays, earlyDepartureDays, totalHours));
         }
 
-        rows.sort(Comparator.comparing(MonthlyAttendanceReportRenderer.MonthlyReportRow::fullName));
+        String positionTitle = employee.positionId() != null
+                ? positionRepository.findById(employee.positionId()).map(Position::title).orElse(null)
+                : null;
 
-        return reportRenderer.render(month, rows, organization.code(), organization.ministryName(), organization.serviceName(),
-                tenantSettingsUseCases.getLogo(TenantContext.get()));
+        return new MonthlyAttendanceReportRenderer.MonthlyReportRow(
+                employee.matricule(), fullName(employee), employee.hierarchie(), positionTitle,
+                ctx.workingDays().size(), presentDays, lateDays, absentDays, earlyDepartureDays, totalHours);
     }
 
     private AttendanceEntry toEntry(AttendancePunch punch, Map<Long, Employee> cache, boolean hasPhoto) {

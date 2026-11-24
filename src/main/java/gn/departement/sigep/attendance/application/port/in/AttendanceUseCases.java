@@ -29,6 +29,10 @@ public interface AttendanceUseCases {
     /** Rapport mensuel de présence (bilan de fin de mois) en PDF, un employé actif par ligne. */
     byte[] generateMonthlyReportPdf(YearMonth month);
 
+    /** Même rapport que {@link #generateMonthlyReportPdf(YearMonth)}, limité à un seul employé —
+     * accessible depuis la liste des pointages filtrée sur cet employé. */
+    byte[] generateEmployeeMonthlyReportPdf(Long employeeId, YearMonth month);
+
     /** Photo prise au moment d'un pointage donné, pour la revue à distance par le directeur. */
     Optional<AttendancePunchPhoto> getPunchPhoto(Long punchId);
 

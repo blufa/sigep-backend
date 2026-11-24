@@ -96,4 +96,16 @@ public class AttendanceController {
                 .header("Content-Disposition", "attachment; filename=\"rapport-mensuel-presence.pdf\"")
                 .body(pdf);
     }
+
+    /** Même rapport mensuel, limité à un seul employé — accessible depuis la liste des pointages
+     * filtrée sur cet employé. */
+    @GetMapping("/report/monthly/employee/{employeeId}")
+    public ResponseEntity<byte[]> employeeMonthlyReport(
+            @PathVariable Long employeeId, @RequestParam int year, @RequestParam int month) {
+        byte[] pdf = useCases.generateEmployeeMonthlyReportPdf(employeeId, YearMonth.of(year, month));
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header("Content-Disposition", "attachment; filename=\"rapport-presence-employe.pdf\"")
+                .body(pdf);
+    }
 }
