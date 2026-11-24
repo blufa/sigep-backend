@@ -66,6 +66,11 @@ class EmployeePersistenceAdapter implements EmployeeRepository {
     }
 
     @Override
+    public Page<Employee> search(String query, Pageable pageable) {
+        return jpaRepository.search(query, pageable).map(mapper::toDomain);
+    }
+
+    @Override
     public long countByActiveTrue() {
         return jpaRepository.countByActiveTrue();
     }

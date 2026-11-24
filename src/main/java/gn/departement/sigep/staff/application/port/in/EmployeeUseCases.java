@@ -14,7 +14,9 @@ public interface EmployeeUseCases {
 
     Employee get(Long id);
 
-    PageResponse<Employee> list(Pageable pageable);
+    /** @param query recherche par matricule/nom/prénom/téléphone — {@code null} ou vide pour lister
+     *               tous les employés sans filtre. */
+    PageResponse<Employee> list(String query, Pageable pageable);
 
     void uploadPhoto(Long id, byte[] content, String contentType);
 

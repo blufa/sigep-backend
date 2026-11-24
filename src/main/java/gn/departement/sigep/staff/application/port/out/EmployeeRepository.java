@@ -22,6 +22,10 @@ public interface EmployeeRepository {
 
     Page<Employee> findAll(Pageable pageable);
 
+    /** Recherche par matricule/nom/prénom/téléphone (insensible à la casse, correspondance
+     * partielle) — utilisée par la barre de recherche de la liste des employés. */
+    Page<Employee> search(String query, Pageable pageable);
+
     long countByActiveTrue();
 
     List<Long> findActiveEmployeeIds();
