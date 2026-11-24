@@ -30,6 +30,7 @@ class UserRepositoryAdapter implements UserRepository {
         entity.setRole(user.role());
         entity.setActive(user.active());
         entity.setAllowedMenus(joinMenus(user.allowedMenus()));
+        entity.setEmployeeId(user.employeeId());
         return toDomain(jpaRepository.save(entity));
     }
 
@@ -67,7 +68,8 @@ class UserRepositoryAdapter implements UserRepository {
                 entity.getFullName(),
                 entity.getRole(),
                 Boolean.TRUE.equals(entity.getActive()),
-                splitMenus(entity.getAllowedMenus())
+                splitMenus(entity.getAllowedMenus()),
+                entity.getEmployeeId()
         );
     }
 

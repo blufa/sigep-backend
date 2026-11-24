@@ -10,6 +10,9 @@ public record User(
         String fullName,
         Role role,
         boolean active,
-        List<String> allowedMenus
+        List<String> allowedMenus,
+        /** Employé lié (compte créé depuis la fiche employé — voir "Créer un compte de connexion")
+         * — {@code null} pour un compte créé directement (ex. le compte administrateur initial). */
+        Long employeeId
 ) {
 }

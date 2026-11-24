@@ -50,4 +50,8 @@ class UserJpaEntity {
      * restriction. Voir {@code UserRepositoryAdapter} pour la conversion depuis/vers List<String>. */
     @Column(name = "allowed_menus")
     private String allowedMenus;
+
+    /** Employé lié (compte créé depuis la fiche employé) — null pour un compte créé directement. */
+    @Column(name = "employee_id")
+    private Long employeeId;
 }

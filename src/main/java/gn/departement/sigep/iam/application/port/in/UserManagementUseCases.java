@@ -21,6 +21,10 @@ public interface UserManagementUseCases {
     /** Réinitialisation par un administrateur : pas besoin de l'ancien mot de passe. */
     void resetPassword(Long userId, String newPassword);
 
+    /** Corrige l'identifiant d'un compte existant (ex. un numéro de téléphone mal normalisé à la
+     * création — espaces, tirets… rendant la connexion impossible). Réservé à l'administrateur. */
+    User updateUsername(Long userId, String newUsername);
+
     /** Changement par l'utilisateur lui-même : l'ancien mot de passe doit être vérifié. */
     void changeOwnPassword(Long userId, String currentPassword, String newPassword);
 
@@ -28,6 +32,14 @@ public interface UserManagementUseCases {
      * toute restriction (il retrouve tous les menus permis par son rôle). */
     User updateAllowedMenus(Long userId, List<String> menuKeys);
 
-    record CreateUserCommand(String username, String fullName, String password, Role role) {
+    record CreateUserCommand(
+            String username,
+            String fullName,
+            String password,
+            Role role,
+            /** Employé à rattacher (ex. depuis la fiche employé — voir "Créer un compte de
+             * connexion") — {@code null} pour un compte sans employé associé. */
+            Long employeeId
+    ) {
     }
 }

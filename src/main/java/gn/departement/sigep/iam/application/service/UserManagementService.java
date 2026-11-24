@@ -42,21 +42,31 @@ public class UserManagementService implements UserManagementUseCases {
                     "INVALID_ROLE", "Le rôle super-administrateur ne peut pas être attribué à un compte de service",
                     HttpStatus.BAD_REQUEST);
         }
-        if (repository.existsByUsername(command.username())) {
+        String username = normalizeUsername(command.username());
+        if (repository.existsByUsername(username)) {
             throw new BusinessRuleException(
                     "USERNAME_TAKEN", "Cet identifiant est déjà utilisé", HttpStatus.CONFLICT);
         }
         User user = new User(
                 null,
                 tenantId,
-                command.username(),
+                username,
                 passwordEncoder.encode(command.password()),
                 command.fullName(),
                 command.role(),
                 true,
-                null
+                null,
+                command.employeeId()
         );
         return repository.save(user);
+    }
+
+    /** Un identifiant ne doit jamais contenir d'espace — sans ça, un compte créé depuis un numéro
+     * de téléphone affiché formaté (ex. "622 78 43 22") devient impossible à saisir correctement
+     * à la connexion, l'utilisateur tapant naturellement son numéro sans espaces (signalé par
+     * l'utilisateur : connexion systématiquement refusée après création du compte). */
+    private String normalizeUsername(String rawUsername) {
+        return rawUsername.trim().replaceAll("\\s+", "");
     }
 
     @Override
@@ -74,6 +84,20 @@ public class UserManagementService implements UserManagementUseCases {
     }
 
     @Override
+    public User updateUsername(Long userId, String newUsername) {
+        User user = getOrThrow(userId);
+        String normalized = normalizeUsername(newUsername);
+        if (!normalized.equals(user.username()) && repository.existsByUsername(normalized)) {
+            throw new BusinessRuleException(
+                    "USERNAME_TAKEN", "Cet identifiant est déjà utilisé", HttpStatus.CONFLICT);
+        }
+        User updated = new User(
+                user.id(), user.tenantId(), normalized, user.passwordHash(), user.fullName(),
+                user.role(), user.active(), user.allowedMenus(), user.employeeId());
+        return repository.save(updated);
+    }
+
+    @Override
     public void changeOwnPassword(Long userId, String currentPassword, String newPassword) {
         User user = getOrThrow(userId);
         if (!passwordEncoder.matches(currentPassword, user.passwordHash())) {
@@ -88,7 +112,7 @@ public class UserManagementService implements UserManagementUseCases {
         User user = getOrThrow(userId);
         User updated = new User(
                 user.id(), user.tenantId(), user.username(), user.passwordHash(), user.fullName(),
-                user.role(), user.active(), menuKeys);
+                user.role(), user.active(), menuKeys, user.employeeId());
         return repository.save(updated);
     }
 
@@ -99,6 +123,7 @@ public class UserManagementService implements UserManagementUseCases {
     private void save(User user, String newPassword) {
         repository.save(new User(
                 user.id(), user.tenantId(), user.username(),
-                passwordEncoder.encode(newPassword), user.fullName(), user.role(), user.active(), user.allowedMenus()));
+                passwordEncoder.encode(newPassword), user.fullName(), user.role(), user.active(),
+                user.allowedMenus(), user.employeeId()));
     }
 }
