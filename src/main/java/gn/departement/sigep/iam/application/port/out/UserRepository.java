@@ -17,4 +17,8 @@ public interface UserRepository {
     boolean existsByUsername(String username);
 
     Page<User> findAll(Pageable pageable);
+
+    /** Recherche par identifiant/nom complet (insensible à la casse, correspondance partielle) —
+     * utilisée par la barre de recherche de la liste des utilisateurs. */
+    Page<User> search(String query, Pageable pageable);
 }

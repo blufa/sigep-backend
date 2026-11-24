@@ -92,8 +92,11 @@ public class EmployeeService implements EmployeeUseCases {
     }
 
     @Override
-    public PageResponse<Employee> list(Pageable pageable) {
-        return PageResponse.from(repository.findAll(pageable));
+    public PageResponse<Employee> list(String query, Pageable pageable) {
+        if (query == null || query.isBlank()) {
+            return PageResponse.from(repository.findAll(pageable));
+        }
+        return PageResponse.from(repository.search(query.trim(), pageable));
     }
 
     @Override

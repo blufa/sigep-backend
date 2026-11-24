@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -33,8 +34,8 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public PageResponse<UserResponse> list(Pageable pageable) {
-        PageResponse<User> page = useCases.list(pageable);
+    public PageResponse<UserResponse> list(@RequestParam(required = false) String q, Pageable pageable) {
+        PageResponse<User> page = useCases.list(q, pageable);
         return new PageResponse<>(
                 page.items().stream().map(UserResponse::from).toList(),
                 page.page(), page.size(), page.totalItems(), page.totalPages());

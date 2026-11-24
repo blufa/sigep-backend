@@ -34,8 +34,8 @@ public class EmployeeController {
     }
 
     @GetMapping
-    public PageResponse<EmployeeResponse> list(Pageable pageable) {
-        PageResponse<gn.departement.sigep.staff.domain.Employee> page = useCases.list(pageable);
+    public PageResponse<EmployeeResponse> list(@RequestParam(required = false) String q, Pageable pageable) {
+        PageResponse<gn.departement.sigep.staff.domain.Employee> page = useCases.list(q, pageable);
         return new PageResponse<>(
                 page.items().stream().map(EmployeeResponse::from).toList(),
                 page.page(), page.size(), page.totalItems(), page.totalPages());

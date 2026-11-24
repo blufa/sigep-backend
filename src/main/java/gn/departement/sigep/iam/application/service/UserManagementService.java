@@ -60,8 +60,11 @@ public class UserManagementService implements UserManagementUseCases {
     }
 
     @Override
-    public PageResponse<User> list(Pageable pageable) {
-        return PageResponse.from(repository.findAll(pageable));
+    public PageResponse<User> list(String query, Pageable pageable) {
+        if (query == null || query.isBlank()) {
+            return PageResponse.from(repository.findAll(pageable));
+        }
+        return PageResponse.from(repository.search(query.trim(), pageable));
     }
 
     @Override
