@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
@@ -167,10 +168,13 @@ public class MonthlyAttendanceReportPdfGenerator implements MonthlyAttendanceRep
 
         LocalDate monthStart = month.atDay(1);
         LocalDate monthEnd = month.atEndOfMonth();
-        int workingDays = rows.isEmpty() ? 0 : rows.get(0).workingDays();
+        // Total officiel du mois (lundi-vendredi), pas seulement les jours déjà écoulés — demande
+        // explicite : pour un mois en cours, "Jours ouvrés" doit afficher le vrai total du mois
+        // (ex. 21 pour novembre), même si le taux de présence ci-dessous reste calculé sur les
+        // jours déjà écoulés (MonthlyReportRow.workingDays(), qui lui ne change pas).
         PdfPCell statsCell = new PdfPCell(miniStatsRow(
                 "Période", monthStart.format(DateTimeFormatter.ofPattern("dd/MM")) + " – " + monthEnd.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
-                "Jours ouvrés", String.valueOf(workingDays),
+                "Jours ouvrés", String.valueOf(fullMonthWorkingDays(month)),
                 "Effectif", rows.size() + " agent" + (rows.size() > 1 ? "s" : "")));
         statsCell.setBorder(Rectangle.NO_BORDER);
         statsCell.setVerticalAlignment(Element.ALIGN_BOTTOM);
@@ -202,6 +206,19 @@ public class MonthlyAttendanceReportPdfGenerator implements MonthlyAttendanceRep
         return table;
     }
 
+    /** Nombre de jours ouvrables (lundi-vendredi) du mois entier, indépendamment de la date
+     * d'édition du rapport — à ne pas confondre avec {@code MonthlyReportRow.workingDays()}, qui ne
+     * compte que les jours déjà écoulés et sert de dénominateur au taux de présence. */
+    private int fullMonthWorkingDays(java.time.YearMonth month) {
+        int count = 0;
+        for (LocalDate day = month.atDay(1); !day.isAfter(month.atEndOfMonth()); day = day.plusDays(1)) {
+            if (day.getDayOfWeek() != DayOfWeek.SATURDAY && day.getDayOfWeek() != DayOfWeek.SUNDAY) {
+                count++;
+            }
+        }
+        return count;
+    }
+
     private PdfPCell coloredRule(float heightPt) {
         PdfPCell cell = new PdfPCell();
         cell.setBorder(Rectangle.NO_BORDER);
@@ -221,10 +238,13 @@ public class MonthlyAttendanceReportPdfGenerator implements MonthlyAttendanceRep
         int totalLate = rows.stream().mapToInt(MonthlyReportRow::lateDays).sum();
         long fullAttendance = rows.stream().filter(r -> r.absentDays() == 0).count();
 
-        PdfPTable cards = new PdfPTable(4);
+        double avgAbsenceRate = 100.0 - avgRate;
+
+        PdfPTable cards = new PdfPTable(5);
         cards.setWidthPercentage(100);
         cards.setSpacingAfter(10f);
         cards.addCell(statCard("TAUX DE PRÉSENCE", String.format(Locale.FRENCH, "%.1f %%", avgRate), rateColor(avgRate), "moyenne du service"));
+        cards.addCell(statCard("TAUX D'ABSENCE", String.format(Locale.FRENCH, "%.1f %%", avgAbsenceRate), rateColor(avgRate), "moyenne du service"));
         cards.addCell(statCard("JOURS D'ABSENCE", String.valueOf(totalAbsences), INK, "sur " + (workingDays * rows.size()) + " jours-agents"));
         cards.addCell(statCard("RETARDS", String.valueOf(totalLate), INK, "arrivées tardives"));
         cards.addCell(statCard("PRÉSENCE COMPLÈTE", fullAttendance + " / " + rows.size(), INK, "agents sans absence"));
