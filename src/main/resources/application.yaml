@@ -38,12 +38,12 @@ sigep:
 
 nimba:
   sms:
-    enabled: ${NIMBA_SMS_ENABLED:false}
+    enabled: ${NIMBA_SMS_ENABLED:true}
     service-id: ${NIMBA_SMS_SERVICE_ID:}
     secret-token: ${NIMBA_SMS_SECRET_TOKEN:}
     base-url: ${NIMBA_SMS_BASE_URL:https://api.nimbasms.com}
-    sender-name: ${NIMBA_SMS_SENDER_NAME:SIGAP}
-    default-country-code: ${NIMBA_SMS_DEFAULT_COUNTRY_CODE:224}
+    sender-name: ${NIMBA_SMS_SENDER_NAME:}
+    default-country-code: ${NIMBA_SMS_DEFAULT_DIALING:224}
 
 springdoc:
   swagger-ui:
