@@ -210,7 +210,7 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         // seule ligne.
         Font countryFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, INK);
         Font mottoFont = FontFactory.getFont(FontFactory.HELVETICA, 18f * PX, MUTED);
-        Font ministryFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18.9f * PX, INK);
+        Font ministryFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, INK);
         Font serviceFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, ACCENT);
 
         PdfPCell cell = new PdfPCell();
