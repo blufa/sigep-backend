@@ -243,11 +243,11 @@ public class MonthlyAttendanceReportPdfGenerator implements MonthlyAttendanceRep
         PdfPTable cards = new PdfPTable(5);
         cards.setWidthPercentage(100);
         cards.setSpacingAfter(10f);
-        cards.addCell(statCard("TAUX DE PRÉSENCE", String.format(Locale.FRENCH, "%.1f %%", avgRate), rateColor(avgRate), "moyenne du service"));
+        cards.addCell(statCard("TAUX DE PRESENCE", String.format(Locale.FRENCH, "%.1f %%", avgRate), rateColor(avgRate), "moyenne du service"));
         cards.addCell(statCard("TAUX D'ABSENCE", String.format(Locale.FRENCH, "%.1f %%", avgAbsenceRate), rateColor(avgRate), "moyenne du service"));
         cards.addCell(statCard("JOURS D'ABSENCE", String.valueOf(totalAbsences), INK, "sur " + (workingDays * rows.size()) + " jours-agents"));
         cards.addCell(statCard("RETARDS", String.valueOf(totalLate), INK, "arrivées tardives"));
-        cards.addCell(statCard("PRÉSENCE COMPLÈTE", fullAttendance + " / " + rows.size(), INK, "agents sans absence"));
+        cards.addCell(statCard("PRESENCE COMPLETE", fullAttendance + " / " + rows.size(), INK, "agents sans absence"));
         return cards;
     }
 
