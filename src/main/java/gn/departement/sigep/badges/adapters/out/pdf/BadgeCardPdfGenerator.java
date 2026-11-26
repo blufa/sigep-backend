@@ -337,7 +337,6 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         panel.addCell(qrCell);
 
         Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, MUTED);
-        Font valueFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 21.6f * PX, INK);
         Font matriculeFont = FontFactory.getFont(FontFactory.COURIER_BOLD, 25.2f * PX, INK);
 
         PdfPCell textCell = new PdfPCell();
@@ -346,10 +345,7 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         textCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         textCell.addElement(new Phrase("MATRICULE", labelFont));
         Paragraph matriculeValue = new Paragraph(card.matricule(), matriculeFont);
-        matriculeValue.setSpacingAfter(6f * PX);
         textCell.addElement(matriculeValue);
-        textCell.addElement(new Phrase("HIERARCHIE", labelFont));
-        textCell.addElement(new Phrase(card.hierarchie() != null ? card.hierarchie() : "—", valueFont));
         panel.addCell(textCell);
 
         PdfPCell wrapper = new PdfPCell(panel);
