@@ -12,6 +12,8 @@ public record MeetingRequest(
         String description,
         @NotNull(message = "La date/heure est requise") Instant scheduledAt,
         String location,
-        @NotEmpty(message = "Au moins un invité est requis") List<Long> attendeeEmployeeIds
+        @NotEmpty(message = "Au moins un invité est requis") List<Long> attendeeEmployeeIds,
+        /** {@code null} = envoi immédiat du SMS de convocation à la création. */
+        Instant notifyAt
 ) {
 }

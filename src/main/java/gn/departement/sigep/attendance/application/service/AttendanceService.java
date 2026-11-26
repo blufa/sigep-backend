@@ -339,13 +339,16 @@ public class AttendanceService implements AttendanceUseCases {
         int presentDays = 0;
         int lateDays = 0;
         int absentDays = 0;
+        int missionDays = 0;
         int earlyDepartureDays = 0;
         double totalHours = 0;
 
         for (LocalDate day : ctx.workingDays()) {
             List<AttendancePunch> dayPunches = punchesByDay.get(day);
             if (dayPunches == null || dayPunches.isEmpty()) {
-                if (!missionUseCases.isOnMission(employee.id(), day)) {
+                if (missionUseCases.isOnMission(employee.id(), day)) {
+                    missionDays++;
+                } else {
                     absentDays++;
                 }
                 continue;
@@ -376,7 +379,7 @@ public class AttendanceService implements AttendanceUseCases {
 
         return new MonthlyAttendanceReportRenderer.MonthlyReportRow(
                 employee.matricule(), fullName(employee), employee.hierarchie(), positionTitle,
-                ctx.workingDays().size(), presentDays, lateDays, absentDays, earlyDepartureDays, totalHours);
+                ctx.workingDays().size(), presentDays, lateDays, absentDays, missionDays, earlyDepartureDays, totalHours);
     }
 
     private AttendanceEntry toEntry(AttendancePunch punch, Map<Long, Employee> cache, boolean hasPhoto) {

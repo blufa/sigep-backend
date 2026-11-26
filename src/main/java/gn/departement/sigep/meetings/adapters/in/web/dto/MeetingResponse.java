@@ -13,6 +13,8 @@ public record MeetingResponse(
         Instant scheduledAt,
         String location,
         List<AttendeeResponse> attendees,
+        Instant notifyAt,
+        boolean notified,
         Instant createdAt
 ) {
 
@@ -22,14 +24,14 @@ public record MeetingResponse(
                 .toList();
         return new MeetingResponse(
                 view.id(), view.title(), view.description(), view.scheduledAt(), view.location(),
-                attendees, view.createdAt());
+                attendees, view.notifyAt(), view.notified(), view.createdAt());
     }
 
     /** Juste après la création : pas encore de vue enrichie, le front connaît déjà les invités choisis. */
     public static MeetingResponse from(Meeting meeting) {
         return new MeetingResponse(
                 meeting.id(), meeting.title(), meeting.description(), meeting.scheduledAt(), meeting.location(),
-                List.of(), meeting.createdAt());
+                List.of(), meeting.notifyAt(), meeting.notified(), meeting.createdAt());
     }
 
     public record AttendeeResponse(Long employeeId, String matricule, String fullName) {

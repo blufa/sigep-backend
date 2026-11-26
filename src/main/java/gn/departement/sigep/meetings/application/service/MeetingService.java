@@ -36,12 +36,26 @@ public class MeetingService implements MeetingUseCases {
 
     @Override
     public Meeting create(CreateMeetingCommand command) {
+        Instant now = Instant.now();
+        boolean sendImmediately = command.notifyAt() == null || !command.notifyAt().isAfter(now);
         Meeting meeting = new Meeting(
                 null, TenantContext.get(), command.title(), command.description(), command.scheduledAt(),
-                command.location(), command.attendeeEmployeeIds(), Instant.now());
+                command.location(), command.attendeeEmployeeIds(), command.notifyAt(), sendImmediately, now);
         Meeting saved = repository.save(meeting);
-        notifyAttendees(saved);
+        if (sendImmediately) {
+            notifyAttendees(saved);
+        }
         return saved;
+    }
+
+    @Override
+    public void dispatchDueNotifications(Instant now) {
+        for (Meeting meeting : repository.findDueUnnotified(now)) {
+            notifyAttendees(meeting);
+            repository.save(new Meeting(
+                    meeting.id(), meeting.tenantId(), meeting.title(), meeting.description(), meeting.scheduledAt(),
+                    meeting.location(), meeting.attendeeEmployeeIds(), meeting.notifyAt(), true, meeting.createdAt()));
+        }
     }
 
     @Override
@@ -78,6 +92,6 @@ public class MeetingService implements MeetingUseCases {
                 .toList();
         return new MeetingView(
                 meeting.id(), meeting.title(), meeting.description(), meeting.scheduledAt(), meeting.location(),
-                attendees, meeting.createdAt());
+                attendees, meeting.notifyAt(), meeting.notified(), meeting.createdAt());
     }
 }

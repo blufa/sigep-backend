@@ -4,6 +4,8 @@ import gn.departement.sigep.meetings.domain.Meeting;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 public interface MeetingRepository {
@@ -16,4 +18,8 @@ public interface MeetingRepository {
     void deleteById(Long id);
 
     Page<Meeting> findAll(Pageable pageable);
+
+    /** Convocations programmées dont l'heure d'envoi est passée et pas encore notifiées — utilisé
+     * par {@code MeetingSmsDispatchScheduler}. */
+    List<Meeting> findDueUnnotified(Instant now);
 }

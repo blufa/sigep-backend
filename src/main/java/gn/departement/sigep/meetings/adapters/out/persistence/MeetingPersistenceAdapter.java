@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -37,5 +39,10 @@ class MeetingPersistenceAdapter implements MeetingRepository {
     @Override
     public Page<Meeting> findAll(Pageable pageable) {
         return jpaRepository.findAll(pageable).map(mapper::toDomain);
+    }
+
+    @Override
+    public List<Meeting> findDueUnnotified(Instant now) {
+        return jpaRepository.findByNotifiedFalseAndNotifyAtLessThanEqual(now).stream().map(mapper::toDomain).toList();
     }
 }

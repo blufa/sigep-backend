@@ -44,6 +44,19 @@ public class MissionService implements MissionUseCases {
     }
 
     @Override
+    public Mission update(Long id, UpdateMissionCommand command) {
+        Mission existing = repository.findById(id).orElseThrow(() -> NotFoundException.of("Mission", id));
+        if (command.endDate().isBefore(command.startDate())) {
+            throw new BusinessRuleException(
+                    "MISSION_INVALID_RANGE", "La date de fin ne peut pas précéder la date de début", HttpStatus.BAD_REQUEST);
+        }
+        Mission updated = new Mission(
+                existing.id(), existing.tenantId(), existing.employeeId(), command.startDate(), command.endDate(),
+                command.reason(), existing.createdAt());
+        return repository.save(updated);
+    }
+
+    @Override
     public void cancel(Long id) {
         repository.findById(id).orElseThrow(() -> NotFoundException.of("Mission", id));
         repository.deleteById(id);

@@ -91,6 +91,19 @@ public class EmployeeService implements EmployeeUseCases {
     }
 
     @Override
+    public void delete(Long id) {
+        get(id);
+        try {
+            repository.deleteById(id);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new BusinessRuleException("EMPLOYEE_HAS_HISTORY",
+                    "Impossible de supprimer cet employé : des pointages, badges, missions ou réunions "
+                            + "lui sont liés. Désactivez-le plutôt depuis sa fiche.",
+                    HttpStatus.CONFLICT);
+        }
+    }
+
+    @Override
     public Employee get(Long id) {
         return repository.findById(id).orElseThrow(() -> NotFoundException.of("Employé", id));
     }

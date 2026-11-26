@@ -46,6 +46,11 @@ class EmployeePersistenceAdapter implements EmployeeRepository {
     }
 
     @Override
+    public void deleteById(Long id) {
+        jpaRepository.deleteById(id);
+    }
+
+    @Override
     public Optional<Employee> findById(Long id) {
         return jpaRepository.findById(id).map(mapper::toDomain);
     }

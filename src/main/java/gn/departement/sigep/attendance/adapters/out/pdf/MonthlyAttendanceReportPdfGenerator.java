@@ -235,17 +235,20 @@ public class MonthlyAttendanceReportPdfGenerator implements MonthlyAttendanceRep
         double avgRate = rows.isEmpty() ? 0
                 : rows.stream().mapToDouble(MonthlyReportRow::attendanceRate).average().orElse(0);
         int totalAbsences = rows.stream().mapToInt(MonthlyReportRow::absentDays).sum();
+        int totalMissionDays = rows.stream().mapToInt(MonthlyReportRow::missionDays).sum();
+        long employeesOnMission = rows.stream().filter(r -> r.missionDays() > 0).count();
         int totalLate = rows.stream().mapToInt(MonthlyReportRow::lateDays).sum();
         long fullAttendance = rows.stream().filter(r -> r.absentDays() == 0).count();
 
         double avgAbsenceRate = 100.0 - avgRate;
 
-        PdfPTable cards = new PdfPTable(5);
+        PdfPTable cards = new PdfPTable(6);
         cards.setWidthPercentage(100);
         cards.setSpacingAfter(10f);
         cards.addCell(statCard("TAUX DE PRESENCE", String.format(Locale.FRENCH, "%.1f %%", avgRate), rateColor(avgRate), "moyenne du service"));
         cards.addCell(statCard("TAUX D'ABSENCE", String.format(Locale.FRENCH, "%.1f %%", avgAbsenceRate), rateColor(avgRate), "moyenne du service"));
         cards.addCell(statCard("JOURS D'ABSENCE", String.valueOf(totalAbsences), INK, "sur " + (workingDays * rows.size()) + " jours-agents"));
+        cards.addCell(statCard("JOURS EN MISSION", String.valueOf(totalMissionDays), ACCENT, employeesOnMission + " agent(s) concerné(s)"));
         cards.addCell(statCard("RETARDS", String.valueOf(totalLate), INK, "arrivées tardives"));
         cards.addCell(statCard("PRESENCE COMPLETE", fullAttendance + " / " + rows.size(), INK, "agents sans absence"));
         return cards;
@@ -280,14 +283,14 @@ public class MonthlyAttendanceReportPdfGenerator implements MonthlyAttendanceRep
     }
 
     private PdfPTable agentTable(List<MonthlyReportRow> rows) {
-        PdfPTable table = new PdfPTable(10);
+        PdfPTable table = new PdfPTable(11);
         table.setWidthPercentage(100);
-        table.setWidths(new float[]{0.5f, 2.6f, 1.4f, 1.8f, 0.8f, 0.8f, 0.8f, 1f, 0.9f, 1.8f});
+        table.setWidths(new float[]{0.5f, 2.6f, 1.4f, 1.8f, 0.8f, 0.8f, 0.8f, 0.8f, 1f, 0.9f, 1.8f});
         table.setSpacingAfter(10f);
 
         Font headFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 8f, Color.WHITE);
         for (String label : new String[]{
-                "N°", "Agent", "Matricule", "Poste", "Prés.", "Abs.", "Retards", "Dép. anti.", "Heures", "Taux"}) {
+                "N°", "Agent", "Matricule", "Poste", "Prés.", "Abs.", "Mission", "Retards", "Dép. anti.", "Heures", "Taux"}) {
             PdfPCell cell = new PdfPCell(new Phrase(label, headFont));
             cell.setBackgroundColor(ACCENT);
             cell.setBorderColor(ACCENT);
@@ -303,7 +306,7 @@ public class MonthlyAttendanceReportPdfGenerator implements MonthlyAttendanceRep
         Font mutedCellFont = FontFactory.getFont(FontFactory.HELVETICA, 8.5f, MUTED);
 
         int rank = 1;
-        int totalPresent = 0, totalAbsent = 0, totalLate = 0, totalEarly = 0, totalWorking = 0;
+        int totalPresent = 0, totalAbsent = 0, totalMission = 0, totalLate = 0, totalEarly = 0, totalWorking = 0;
         double totalHours = 0;
         for (MonthlyReportRow row : rows) {
             addCell(table, String.valueOf(rank++), numFont, Element.ALIGN_CENTER);
@@ -321,6 +324,7 @@ public class MonthlyAttendanceReportPdfGenerator implements MonthlyAttendanceRep
             addCell(table, row.positionTitle() != null ? row.positionTitle() : "—", mutedCellFont, Element.ALIGN_LEFT);
             addCell(table, String.valueOf(row.presentDays()), cellFont, Element.ALIGN_CENTER);
             addCell(table, String.valueOf(row.absentDays()), row.absentDays() > 0 ? boldColored(DANGER) : mutedCellFont, Element.ALIGN_CENTER);
+            addCell(table, String.valueOf(row.missionDays()), row.missionDays() > 0 ? boldColored(ACCENT) : mutedCellFont, Element.ALIGN_CENTER);
             addCell(table, String.valueOf(row.lateDays()), row.lateDays() > 0 ? boldColored(WARNING) : mutedCellFont, Element.ALIGN_CENTER);
             addCell(table, String.valueOf(row.earlyDepartureDays()), row.earlyDepartureDays() > 0 ? boldColored(WARNING) : mutedCellFont, Element.ALIGN_CENTER);
             addCell(table, String.format(Locale.FRENCH, "%.1f", row.totalHours()), cellFont, Element.ALIGN_CENTER);
@@ -328,6 +332,7 @@ public class MonthlyAttendanceReportPdfGenerator implements MonthlyAttendanceRep
 
             totalPresent += row.presentDays();
             totalAbsent += row.absentDays();
+            totalMission += row.missionDays();
             totalLate += row.lateDays();
             totalEarly += row.earlyDepartureDays();
             totalHours += row.totalHours();
@@ -336,7 +341,7 @@ public class MonthlyAttendanceReportPdfGenerator implements MonthlyAttendanceRep
 
         if (rows.isEmpty()) {
             PdfPCell empty = new PdfPCell(new Phrase("Aucun employé actif.", mutedCellFont));
-            empty.setColspan(10);
+            empty.setColspan(11);
             empty.setBorderColor(BORDER);
             empty.setPadding(10f);
             table.addCell(empty);
@@ -350,6 +355,7 @@ public class MonthlyAttendanceReportPdfGenerator implements MonthlyAttendanceRep
             table.addCell(totalLabel);
             addCell(table, String.valueOf(totalPresent), totalLabelFont, Element.ALIGN_CENTER, CARD_BG);
             addCell(table, String.valueOf(totalAbsent), totalLabelFont, Element.ALIGN_CENTER, CARD_BG);
+            addCell(table, String.valueOf(totalMission), totalLabelFont, Element.ALIGN_CENTER, CARD_BG);
             addCell(table, String.valueOf(totalLate), totalLabelFont, Element.ALIGN_CENTER, CARD_BG);
             addCell(table, String.valueOf(totalEarly), totalLabelFont, Element.ALIGN_CENTER, CARD_BG);
             addCell(table, String.format(Locale.FRENCH, "%.1f", totalHours), totalLabelFont, Element.ALIGN_CENTER, CARD_BG);

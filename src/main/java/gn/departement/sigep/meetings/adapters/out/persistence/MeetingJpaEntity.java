@@ -42,6 +42,12 @@ class MeetingJpaEntity {
 
     private String location;
 
+    @Column(name = "notify_at")
+    private Instant notifyAt;
+
+    @Column(nullable = false)
+    private Boolean notified = false;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 

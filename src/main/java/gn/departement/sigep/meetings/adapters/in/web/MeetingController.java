@@ -38,7 +38,7 @@ public class MeetingController {
     public MeetingResponse create(@Valid @RequestBody MeetingRequest request) {
         return MeetingResponse.from(useCases.create(new MeetingUseCases.CreateMeetingCommand(
                 request.title(), request.description(), request.scheduledAt(), request.location(),
-                request.attendeeEmployeeIds())));
+                request.attendeeEmployeeIds(), request.notifyAt())));
     }
 
     @DeleteMapping("/{id}")

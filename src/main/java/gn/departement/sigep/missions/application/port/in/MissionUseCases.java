@@ -11,6 +11,8 @@ public interface MissionUseCases {
 
     Mission create(CreateMissionCommand command);
 
+    Mission update(Long id, UpdateMissionCommand command);
+
     void cancel(Long id);
 
     PageResponse<MissionView> list(Long employeeId, Pageable pageable);
@@ -20,6 +22,11 @@ public interface MissionUseCases {
     boolean isOnMission(Long employeeId, LocalDate date);
 
     record CreateMissionCommand(Long employeeId, LocalDate startDate, LocalDate endDate, String reason) {
+    }
+
+    /** L'employé n'est volontairement pas modifiable — annuler puis recréer si la mission a été
+     * affectée au mauvais employé, pour éviter toute ambiguïté sur l'historique SMS déjà envoyé. */
+    record UpdateMissionCommand(LocalDate startDate, LocalDate endDate, String reason) {
     }
 
     /** Vue enrichie (matricule/nom) pour l'affichage — l'entité {@link Mission} ne porte que
