@@ -3,6 +3,7 @@ package gn.departement.sigep.meetings.adapters.in.web;
 import gn.departement.sigep.common.PageResponse;
 import gn.departement.sigep.meetings.adapters.in.web.dto.MeetingRequest;
 import gn.departement.sigep.meetings.adapters.in.web.dto.MeetingResponse;
+import gn.departement.sigep.meetings.adapters.in.web.dto.UpdateMeetingRequest;
 import gn.departement.sigep.meetings.application.port.in.MeetingUseCases;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,6 +41,13 @@ public class MeetingController {
         return MeetingResponse.from(useCases.create(new MeetingUseCases.CreateMeetingCommand(
                 request.title(), request.description(), request.scheduledAt(), request.location(),
                 request.attendeeEmployeeIds(), request.notifyAt())));
+    }
+
+    @PutMapping("/{id}")
+    public MeetingResponse update(@PathVariable Long id, @Valid @RequestBody UpdateMeetingRequest request) {
+        return MeetingResponse.from(useCases.update(id, new MeetingUseCases.UpdateMeetingCommand(
+                request.title(), request.description(), request.scheduledAt(), request.location(),
+                request.attendeeEmployeeIds())));
     }
 
     @DeleteMapping("/{id}")

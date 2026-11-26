@@ -49,6 +49,16 @@ public class MeetingService implements MeetingUseCases {
     }
 
     @Override
+    public Meeting update(Long id, UpdateMeetingCommand command) {
+        Meeting existing = repository.findById(id).orElseThrow(() -> NotFoundException.of("Réunion", id));
+        Meeting updated = new Meeting(
+                existing.id(), existing.tenantId(), command.title(), command.description(), command.scheduledAt(),
+                command.location(), command.attendeeEmployeeIds(), existing.notifyAt(), existing.notified(),
+                existing.createdAt());
+        return repository.save(updated);
+    }
+
+    @Override
     public void dispatchDueNotifications(Instant now) {
         for (Meeting meeting : repository.findDueUnnotified(now)) {
             notifyAttendees(meeting);

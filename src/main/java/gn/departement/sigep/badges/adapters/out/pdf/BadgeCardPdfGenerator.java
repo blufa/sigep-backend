@@ -233,7 +233,7 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
             try {
                 identityRow.setWidths(new float[]{1.4f, 2.6f});
                 Image logoImage = Image.getInstance(logo.content());
-                logoImage.scaleToFit(15f * MM, 15f * MM);
+                logoImage.scaleToFit(12f * MM, 12f * MM);
                 PdfPCell logoCell = new PdfPCell(logoImage, false);
                 logoCell.setBorder(Rectangle.NO_BORDER);
                 logoCell.setHorizontalAlignment(Element.ALIGN_CENTER);
