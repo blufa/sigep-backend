@@ -12,6 +12,11 @@ public interface EmployeeUseCases {
 
     Employee update(Long id, UpdateEmployeeCommand command);
 
+    /** Supprime définitivement l'employé — rejeté (voir {@code BusinessRuleException}) si des
+     * pointages, badges, missions ou réunions lui sont liés ; désactiver (voir {@link #update}
+     * avec {@code active=false}) est alors la bonne alternative pour préserver l'historique. */
+    void delete(Long id);
+
     Employee get(Long id);
 
     /** @param query recherche par matricule/nom/prénom/téléphone — {@code null} ou vide pour lister

@@ -12,6 +12,7 @@ import gn.departement.sigep.common.PageResponse;
 import gn.departement.sigep.common.TenantContext;
 import gn.departement.sigep.common.exception.BusinessRuleException;
 import gn.departement.sigep.common.exception.NotFoundException;
+import gn.departement.sigep.missions.application.port.in.MissionUseCases;
 import gn.departement.sigep.platform.application.port.in.TenantSettingsUseCases;
 import gn.departement.sigep.platform.domain.Tenant;
 import gn.departement.sigep.staff.application.port.out.EmployeeRepository;
@@ -52,6 +53,7 @@ public class AttendanceService implements AttendanceUseCases {
     private final PositionRepository positionRepository;
     private final TenantSettingsUseCases tenantSettingsUseCases;
     private final MonthlyAttendanceReportRenderer reportRenderer;
+    private final MissionUseCases missionUseCases;
 
     public AttendanceService(
             AttendanceRepository attendanceRepository,
@@ -59,13 +61,15 @@ public class AttendanceService implements AttendanceUseCases {
             EmployeeRepository employeeRepository,
             PositionRepository positionRepository,
             TenantSettingsUseCases tenantSettingsUseCases,
-            MonthlyAttendanceReportRenderer reportRenderer) {
+            MonthlyAttendanceReportRenderer reportRenderer,
+            MissionUseCases missionUseCases) {
         this.attendanceRepository = attendanceRepository;
         this.badgeUseCases = badgeUseCases;
         this.employeeRepository = employeeRepository;
         this.positionRepository = positionRepository;
         this.tenantSettingsUseCases = tenantSettingsUseCases;
         this.reportRenderer = reportRenderer;
+        this.missionUseCases = missionUseCases;
     }
 
     @Override
@@ -117,6 +121,71 @@ public class AttendanceService implements AttendanceUseCases {
     @Override
     public void flagPunch(Long punchId, boolean flagged) {
         attendanceRepository.setFlagged(punchId, flagged);
+    }
+
+    @Override
+    public PageResponse<DailyStatusEntry> dailyStatus(LocalDate day, DailyStatus statusFilter, Pageable pageable) {
+        Tenant organization = tenantSettingsUseCases.getCurrent();
+        LocalTime workStart = organization.workStartTime() != null ? organization.workStartTime() : DEFAULT_WORK_START;
+
+        Instant dayStart = day.atStartOfDay(ZONE).toInstant();
+        Instant dayEnd = day.plusDays(1).atStartOfDay(ZONE).toInstant();
+        List<AttendancePunch> dayPunches = attendanceRepository.findAllByScannedAtBetween(dayStart, dayEnd);
+        Map<Long, List<AttendancePunch>> punchesByEmployee = dayPunches.stream()
+                .collect(java.util.stream.Collectors.groupingBy(AttendancePunch::employeeId));
+
+        List<Long> activeEmployeeIds = employeeRepository.findActiveEmployeeIds();
+        List<DailyStatusEntry> all = new ArrayList<>();
+
+        for (Long employeeId : activeEmployeeIds) {
+            Employee employee = employeeRepository.findById(employeeId).orElse(null);
+            if (employee == null) {
+                continue;
+            }
+            List<AttendancePunch> punches = punchesByEmployee.get(employeeId);
+            DailyStatus status;
+            Instant firstEntree = null;
+            Instant lastSortie = null;
+            if (punches == null || punches.isEmpty()) {
+                // Un employé en mission officielle ce jour-là ne doit pas être compté absent (ni
+                // déclencher la notification SMS d'absence, voir AbsenceSmsNotificationScheduler).
+                status = missionUseCases.isOnMission(employeeId, day) ? DailyStatus.EN_MISSION : DailyStatus.ABSENT;
+            } else {
+                firstEntree = punches.stream()
+                        .filter(p -> p.direction() == Direction.ENTREE)
+                        .map(AttendancePunch::scannedAt)
+                        .min(Comparator.naturalOrder())
+                        .orElse(null);
+                lastSortie = punches.stream()
+                        .filter(p -> p.direction() == Direction.SORTIE)
+                        .map(AttendancePunch::scannedAt)
+                        .max(Comparator.naturalOrder())
+                        .orElse(null);
+                status = firstEntree != null && firstEntree.atZone(ZONE).toLocalTime().isAfter(workStart)
+                        ? DailyStatus.RETARD
+                        : DailyStatus.PRESENT;
+            }
+
+            if (statusFilter != null && status != statusFilter) {
+                continue;
+            }
+
+            String positionTitle = employee.positionId() != null
+                    ? positionRepository.findById(employee.positionId()).map(Position::title).orElse(null)
+                    : null;
+            all.add(new DailyStatusEntry(
+                    employee.id(), employee.matricule(), fullName(employee), positionTitle,
+                    status, firstEntree, lastSortie));
+        }
+
+        all.sort(Comparator.comparing(DailyStatusEntry::fullName));
+
+        int start = Math.min((int) pageable.getOffset(), all.size());
+        int end = Math.min(start + pageable.getPageSize(), all.size());
+        List<DailyStatusEntry> pageContent = all.subList(start, end);
+        int totalPages = pageable.getPageSize() == 0 ? 0 : (int) Math.ceil(all.size() / (double) pageable.getPageSize());
+
+        return new PageResponse<>(pageContent, pageable.getPageNumber(), pageable.getPageSize(), all.size(), totalPages);
     }
 
     @Override
@@ -184,10 +253,14 @@ public class AttendanceService implements AttendanceUseCases {
             }
         }
 
-        long absentToday = activeEmployeeIds.size() - arrivedToday.size();
+        LocalDate today = Instant.now().atZone(ZONE).toLocalDate();
+        long onMissionToday = activeEmployeeIds.stream()
+                .filter(id -> !arrivedToday.contains(id) && missionUseCases.isOnMission(id, today))
+                .count();
+        long absentToday = activeEmployeeIds.size() - arrivedToday.size() - onMissionToday;
 
         return new AttendanceSummary(
-                presentToday, activeEmployeeIds.size(), onTimeToday, lateToday, absentToday, earlyDepartureToday);
+                presentToday, activeEmployeeIds.size(), onTimeToday, lateToday, absentToday, earlyDepartureToday, onMissionToday);
     }
 
     @Override
@@ -266,13 +339,18 @@ public class AttendanceService implements AttendanceUseCases {
         int presentDays = 0;
         int lateDays = 0;
         int absentDays = 0;
+        int missionDays = 0;
         int earlyDepartureDays = 0;
         double totalHours = 0;
 
         for (LocalDate day : ctx.workingDays()) {
             List<AttendancePunch> dayPunches = punchesByDay.get(day);
             if (dayPunches == null || dayPunches.isEmpty()) {
-                absentDays++;
+                if (missionUseCases.isOnMission(employee.id(), day)) {
+                    missionDays++;
+                } else {
+                    absentDays++;
+                }
                 continue;
             }
             presentDays++;
@@ -301,7 +379,7 @@ public class AttendanceService implements AttendanceUseCases {
 
         return new MonthlyAttendanceReportRenderer.MonthlyReportRow(
                 employee.matricule(), fullName(employee), employee.hierarchie(), positionTitle,
-                ctx.workingDays().size(), presentDays, lateDays, absentDays, earlyDepartureDays, totalHours);
+                ctx.workingDays().size(), presentDays, lateDays, absentDays, missionDays, earlyDepartureDays, totalHours);
     }
 
     private AttendanceEntry toEntry(AttendancePunch punch, Map<Long, Employee> cache, boolean hasPhoto) {

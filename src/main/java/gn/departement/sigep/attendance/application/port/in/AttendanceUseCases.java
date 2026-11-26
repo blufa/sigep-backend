@@ -6,6 +6,7 @@ import gn.departement.sigep.common.PageResponse;
 import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Optional;
 
@@ -41,6 +42,26 @@ public interface AttendanceUseCases {
      * quand la photo caméra ne correspond visiblement pas à la photo officielle de l'employé. */
     void flagPunch(Long punchId, boolean flagged);
 
+    /** Statut (présent/absent/retard) de chaque employé actif pour un jour donné — à la différence
+     * de {@link #history}, qui ne liste que les pointages scannés (un employé absent n'a aucune
+     * ligne), cette vue couvre TOUS les employés actifs, y compris ceux sans aucun pointage ce
+     * jour-là. Utilisée par le filtre "Statut" de la liste des pointages.
+     * @param statusFilter {@code null} pour ne pas filtrer (tous statuts confondus). */
+    PageResponse<DailyStatusEntry> dailyStatus(LocalDate day, DailyStatus statusFilter, Pageable pageable);
+
+    enum DailyStatus { PRESENT, ABSENT, RETARD, EN_MISSION }
+
+    record DailyStatusEntry(
+            Long employeeId,
+            String matricule,
+            String fullName,
+            String positionTitle,
+            DailyStatus status,
+            Instant firstEntree,
+            Instant lastSortie
+    ) {
+    }
+
     record ScanResult(
             Long id,
             Long employeeId,
@@ -71,7 +92,8 @@ public interface AttendanceUseCases {
             long onTimeToday,
             long lateToday,
             long absentToday,
-            long earlyDepartureToday
+            long earlyDepartureToday,
+            long onMissionToday
     ) {
     }
 }

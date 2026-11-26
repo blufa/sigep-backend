@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,6 +63,12 @@ public class EmployeeController {
                 request.matricule(), request.lastName(), request.firstName(), request.hierarchie(),
                 request.genre(), request.positionId(), request.phone(), request.city(), request.active());
         return EmployeeResponse.from(useCases.update(id, command));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public void delete(@PathVariable Long id) {
+        useCases.delete(id);
     }
 
     @PostMapping("/{id}/photo")

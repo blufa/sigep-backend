@@ -8,7 +8,8 @@ public record AttendanceSummaryResponse(
         long onTimeToday,
         long lateToday,
         long absentToday,
-        long earlyDepartureToday
+        long earlyDepartureToday,
+        long onMissionToday
 ) {
 
     public static AttendanceSummaryResponse from(AttendanceUseCases.AttendanceSummary summary) {
@@ -18,7 +19,8 @@ public record AttendanceSummaryResponse(
                 summary.onTimeToday(),
                 summary.lateToday(),
                 summary.absentToday(),
-                summary.earlyDepartureToday()
+                summary.earlyDepartureToday(),
+                summary.onMissionToday()
         );
     }
 }

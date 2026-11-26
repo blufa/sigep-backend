@@ -171,7 +171,7 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
             card_.addCell(spacer);
         }
 
-        card_.addCell(footerCell(card));
+        card_.addCell(footerCell());
 
         return card_;
     }
@@ -205,9 +205,12 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
             "SERVICE NATIONAL DES INFRASTRUCTURES, ÉQUIPEMENTS SCOLAIRES ET MAINTENANCE";
 
     private PdfPCell headerCell(BadgeCardView card, OrganizationLogo logo) {
-        Font countryFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 23.4f * PX, INK);
+        // Réduit depuis 23.4 : avec le logo agrandi à 15mm (moins de largeur dispo pour le texte),
+        // "RÉPUBLIQUE DE GUINÉE" repassait sur deux lignes — demande explicite de tenir sur une
+        // seule ligne.
+        Font countryFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, INK);
         Font mottoFont = FontFactory.getFont(FontFactory.HELVETICA, 18f * PX, MUTED);
-        Font ministryFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18.9f * PX, INK);
+        Font ministryFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, INK);
         Font serviceFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, ACCENT);
 
         PdfPCell cell = new PdfPCell();
@@ -218,7 +221,7 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         cell.setPaddingRight(20f * PX);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-        Paragraph country = new Paragraph("RÉPUBLIQUE DE GUINÉE", countryFont);
+        Paragraph country = new Paragraph("REPUBLIQUE DE GUINEE", countryFont);
         country.setAlignment(Element.ALIGN_CENTER);
 
         Paragraph motto = new Paragraph("Travail – Justice – Solidarité", mottoFont);
@@ -228,9 +231,9 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         if (logo.isPresent()) {
             PdfPTable identityRow = new PdfPTable(2);
             try {
-                identityRow.setWidths(new float[]{1f, 2.6f});
+                identityRow.setWidths(new float[]{1.4f, 2.6f});
                 Image logoImage = Image.getInstance(logo.content());
-                logoImage.scaleToFit(85f * PX, 85f * PX);
+                logoImage.scaleToFit(12f * MM, 12f * MM);
                 PdfPCell logoCell = new PdfPCell(logoImage, false);
                 logoCell.setBorder(Rectangle.NO_BORDER);
                 logoCell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -291,7 +294,6 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
 
         Font firstNameFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 32.4f * PX, MUTED);
         Font lastNameFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 32.4f * PX, INK);
-        Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, MUTED);
         Font valueFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 23.4f * PX, INK);
 
         String[] nameParts = splitFullName(card.fullName());
@@ -302,12 +304,12 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         infoCell.setPaddingTop(4f * PX);
         infoCell.addElement(new Phrase(nameParts[0], firstNameFont));
         Paragraph lastName = new Paragraph(nameParts[1].toUpperCase(), lastNameFont);
-        // Sépare davantage "FONCTION" du nom — demande explicite : "faire descendre un peu
-        // FONCTION Directeur Général" (même ajustement que id-badge.tsx côté front).
+        // Sépare le poste du nom — demande explicite : "faire descendre un peu FONCTION Directeur
+        // Général" (même ajustement que id-badge.tsx côté front), le libellé "FONCTION" a depuis
+        // été retiré mais l'espacement reste utile.
         lastName.setSpacingAfter(13f * PX);
         infoCell.addElement(lastName);
 
-        infoCell.addElement(new Phrase("FONCTION", labelFont));
         Paragraph fonctionValue = new Paragraph(card.positionTitle() != null ? card.positionTitle() : "—", valueFont);
         infoCell.addElement(fonctionValue);
         identity.addCell(infoCell);
@@ -334,7 +336,6 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         qrCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         panel.addCell(qrCell);
 
-        Font instructionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 21.6f * PX, INK);
         Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18f * PX, MUTED);
         Font valueFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 21.6f * PX, INK);
         Font matriculeFont = FontFactory.getFont(FontFactory.COURIER_BOLD, 25.2f * PX, INK);
@@ -343,14 +344,11 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         textCell.setBorder(Rectangle.NO_BORDER);
         textCell.setPaddingLeft(10f * PX);
         textCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        Paragraph instruction = new Paragraph("Scanner à l'arrivée et au départ", instructionFont);
-        instruction.setSpacingAfter(6f * PX);
-        textCell.addElement(instruction);
         textCell.addElement(new Phrase("MATRICULE", labelFont));
         Paragraph matriculeValue = new Paragraph(card.matricule(), matriculeFont);
         matriculeValue.setSpacingAfter(6f * PX);
         textCell.addElement(matriculeValue);
-        textCell.addElement(new Phrase("HIÉRARCHIE", labelFont));
+        textCell.addElement(new Phrase("HIERARCHIE", labelFont));
         textCell.addElement(new Phrase(card.hierarchie() != null ? card.hierarchie() : "—", valueFont));
         panel.addCell(textCell);
 
@@ -364,30 +362,19 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         return wrapper;
     }
 
-    private PdfPCell footerCell(BadgeCardView card) {
-        PdfPTable footer = new PdfPTable(2);
+    private PdfPCell footerCell() {
+        PdfPTable footer = new PdfPTable(1);
         footer.setWidthPercentage(100);
 
         Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 27.9f * PX, Color.WHITE);
-        Font cityFont = FontFactory.getFont(FontFactory.HELVETICA, 18f * PX, Color.WHITE);
 
-        PdfPCell title = new PdfPCell(new Phrase("BADGE AGENT", titleFont));
+        PdfPCell title = new PdfPCell(new Phrase("CARTE DE SERVICE", titleFont));
         title.setBorder(Rectangle.NO_BORDER);
         title.setBackgroundColor(ACCENT);
         title.setVerticalAlignment(Element.ALIGN_MIDDLE);
         title.setPaddingLeft(20f * PX);
         title.setFixedHeight(50f * PX);
         footer.addCell(title);
-
-        String city = card.city() != null && !card.city().isBlank() ? card.city() : "";
-        PdfPCell cityCell = new PdfPCell(new Phrase(city, cityFont));
-        cityCell.setBorder(Rectangle.NO_BORDER);
-        cityCell.setBackgroundColor(ACCENT);
-        cityCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        cityCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        cityCell.setPaddingRight(20f * PX);
-        cityCell.setFixedHeight(50f * PX);
-        footer.addCell(cityCell);
 
         PdfPCell wrapper = new PdfPCell(footer);
         wrapper.setBorder(Rectangle.NO_BORDER);

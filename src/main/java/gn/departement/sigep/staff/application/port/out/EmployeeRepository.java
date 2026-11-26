@@ -12,6 +12,8 @@ public interface EmployeeRepository {
 
     Employee save(Employee employee);
 
+    void deleteById(Long id);
+
     Optional<Employee> findById(Long id);
 
     boolean existsByMatricule(String matricule);

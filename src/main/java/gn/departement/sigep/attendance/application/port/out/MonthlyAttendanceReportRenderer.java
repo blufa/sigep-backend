@@ -26,6 +26,9 @@ public interface MonthlyAttendanceReportRenderer {
             int presentDays,
             int lateDays,
             int absentDays,
+            /** Jours ouvrés du mois couverts par une mission officielle — exclus de {@code absentDays}
+             * (voir {@code gn.departement.sigep.missions}). */
+            int missionDays,
             int earlyDepartureDays,
             double totalHours
     ) {
