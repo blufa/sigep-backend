@@ -9,6 +9,8 @@ public record BadgeCardView(
         String qrToken,
         String ministryName,
         String serviceName,
-        String city
+        String city,
+        /** Sigle du tenant (ex. "SNIESM") — affiché seul au verso du badge. */
+        String organizationCode
 ) {
 }

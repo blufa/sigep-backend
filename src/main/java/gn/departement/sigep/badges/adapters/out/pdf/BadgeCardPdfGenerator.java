@@ -79,6 +79,9 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
             // (page blanche) tant qu'on ne compte pas les pages du PDF généré.
             buildCard(card, photo, logo, CARD_WIDTH).writeSelectedRows(0, -1, 0, CARD_HEIGHT, writer.getDirectContent());
             writer.setPageEmpty(false);
+            document.newPage();
+            buildBackCard(card, CARD_WIDTH).writeSelectedRows(0, -1, 0, CARD_HEIGHT, writer.getDirectContent());
+            writer.setPageEmpty(false);
             document.close();
             return out.toByteArray();
         } catch (DocumentException e) {
@@ -131,6 +134,24 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
                 writer.setPageEmpty(false);
             }
 
+            // Verso (§demande du DG : "mettre SNIESM en verso") : une page par page de recto, même
+            // grille — pas d'alignement recto-verso physique visé ici (planche papier découpée à la
+            // main, pas une imprimante de cartes recto-verso automatique).
+            for (int i = 0; i < cards.size(); i++) {
+                int positionOnPage = i % perPage;
+                if (positionOnPage == 0) {
+                    document.newPage();
+                }
+                int col = positionOnPage % SHEET_COLUMNS;
+                int row = positionOnPage / SHEET_COLUMNS;
+                float x = SHEET_MARGIN + col * (CARD_WIDTH + SHEET_GAP);
+                float yTop = pageHeight - SHEET_MARGIN - row * (CARD_HEIGHT + SHEET_GAP);
+
+                PdfPTable backTable = buildBackCard(cards.get(i).card(), CARD_WIDTH);
+                backTable.writeSelectedRows(0, -1, x, yTop, canvas);
+                writer.setPageEmpty(false);
+            }
+
             document.close();
             return out.toByteArray();
         } catch (DocumentException e) {
@@ -172,6 +193,30 @@ public class BadgeCardPdfGenerator implements BadgeCardRenderer {
         }
 
         card_.addCell(footerCell());
+
+        return card_;
+    }
+
+    /**
+     * Verso du badge (§demande du DG : "mettre SNIESM en verso") — sobre, juste le sigle du tenant
+     * ({@code card.organizationCode()}) centré en grand sous le même bandeau tricolore qu'au recto,
+     * pas d'autre contenu.
+     */
+    private PdfPTable buildBackCard(BadgeCardView card, float width) {
+        PdfPTable card_ = new PdfPTable(1);
+        card_.setTotalWidth(width);
+        card_.setLockedWidth(true);
+
+        card_.addCell(flagStripeRow(width));
+
+        Font codeFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 54f * PX, ACCENT);
+        PdfPCell codeCell = new PdfPCell(new Phrase(
+                card.organizationCode() != null ? card.organizationCode() : "", codeFont));
+        codeCell.setBorder(Rectangle.NO_BORDER);
+        codeCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        codeCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        codeCell.setFixedHeight(CARD_HEIGHT - 12f * PX);
+        card_.addCell(codeCell);
 
         return card_;
     }

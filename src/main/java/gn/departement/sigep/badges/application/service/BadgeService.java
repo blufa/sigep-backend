@@ -196,7 +196,8 @@ public class BadgeService implements BadgeUseCases {
                 badge.qrToken(),
                 organization.ministryName(),
                 organization.serviceName(),
-                employee.city()
+                employee.city(),
+                organization.code()
         );
     }
 
