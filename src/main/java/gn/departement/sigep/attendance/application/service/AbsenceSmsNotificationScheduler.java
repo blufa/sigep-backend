@@ -66,8 +66,8 @@ public class AbsenceSmsNotificationScheduler {
         for (AttendanceUseCases.DailyStatusEntry absentee : absentees) {
             Employee employee = employeeRepository.findById(absentee.employeeId()).orElse(null);
             if (employee != null && employee.phone() != null && !employee.phone().isBlank()) {
-                smsUseCases.sendSms(employee.phone(), "SIGAP : vous êtes marqué(e) absent(e) aujourd'hui "
-                        + today.format(DATE_FMT) + ". Contactez votre service RH en cas d'erreur.");
+                smsUseCases.sendSms(employee.phone(), "SNIESM : vous êtes marqué(e) absent(e) aujourd'hui "
+                        + today.format(DATE_FMT) + ". Contactez votre service.");
             }
         }
     }
