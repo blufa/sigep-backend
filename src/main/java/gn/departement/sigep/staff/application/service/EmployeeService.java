@@ -17,12 +17,24 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
 @Service
 public class EmployeeService implements EmployeeUseCases {
+
+    /** Taille cible (carré) de la photo employée après traitement — cohérent sur toutes les photos
+     * affichées sur le badge et la fiche, quelle que soit la photo d'origine envoyée. */
+    private static final int PHOTO_SIZE = 400;
 
     private final EmployeeRepository repository;
     private final PositionRepository positionRepository;
@@ -119,7 +131,39 @@ public class EmployeeService implements EmployeeUseCases {
     @Override
     public void uploadPhoto(Long id, byte[] content, String contentType) {
         get(id);
-        repository.savePhoto(id, content, contentType);
+        byte[] processed = flattenToWhiteAndResize(content);
+        repository.savePhoto(id, processed != null ? processed : content, processed != null ? "image/jpeg" : contentType);
+    }
+
+    /** Aplatit une éventuelle transparence (PNG) sur fond blanc et redimensionne en carré
+     * {@value #PHOTO_SIZE}×{@value #PHOTO_SIZE} (ratio préservé, cadré au centre) — pas de détourage
+     * de la personne, juste un rendu homogène quelle que soit la photo envoyée. Retourne {@code null}
+     * (et laisse l'original tel quel) si le format n'est pas décodable par {@link ImageIO}, pour ne
+     * jamais faire échouer un envoi de photo à cause de ce traitement. */
+    private byte[] flattenToWhiteAndResize(byte[] content) {
+        try {
+            BufferedImage source = ImageIO.read(new ByteArrayInputStream(content));
+            if (source == null) {
+                return null;
+            }
+            double scale = Math.min((double) PHOTO_SIZE / source.getWidth(), (double) PHOTO_SIZE / source.getHeight());
+            int scaledWidth = Math.max(1, (int) Math.round(source.getWidth() * scale));
+            int scaledHeight = Math.max(1, (int) Math.round(source.getHeight() * scale));
+
+            BufferedImage result = new BufferedImage(PHOTO_SIZE, PHOTO_SIZE, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g = result.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.setColor(Color.WHITE);
+            g.fillRect(0, 0, PHOTO_SIZE, PHOTO_SIZE);
+            g.drawImage(source, (PHOTO_SIZE - scaledWidth) / 2, (PHOTO_SIZE - scaledHeight) / 2, scaledWidth, scaledHeight, null);
+            g.dispose();
+
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            ImageIO.write(result, "jpg", output);
+            return output.toByteArray();
+        } catch (IOException | RuntimeException e) {
+            return null;
+        }
     }
 
     @Override
