@@ -49,7 +49,7 @@ public interface AttendanceUseCases {
      * @param statusFilter {@code null} pour ne pas filtrer (tous statuts confondus). */
     PageResponse<DailyStatusEntry> dailyStatus(LocalDate day, DailyStatus statusFilter, Pageable pageable);
 
-    enum DailyStatus { PRESENT, ABSENT, RETARD }
+    enum DailyStatus { PRESENT, ABSENT, RETARD, EN_MISSION }
 
     record DailyStatusEntry(
             Long employeeId,
@@ -92,7 +92,8 @@ public interface AttendanceUseCases {
             long onTimeToday,
             long lateToday,
             long absentToday,
-            long earlyDepartureToday
+            long earlyDepartureToday,
+            long onMissionToday
     ) {
     }
 }

@@ -8,6 +8,7 @@ import gn.departement.sigep.badges.domain.EmployeeBadge;
 import gn.departement.sigep.common.TenantContext;
 import gn.departement.sigep.common.exception.BusinessRuleException;
 import gn.departement.sigep.attendance.application.port.out.MonthlyAttendanceReportRenderer;
+import gn.departement.sigep.missions.application.port.in.MissionUseCases;
 import gn.departement.sigep.platform.application.port.in.TenantSettingsUseCases;
 import gn.departement.sigep.staff.application.port.out.EmployeeRepository;
 import gn.departement.sigep.staff.application.port.out.PositionRepository;
@@ -38,9 +39,10 @@ class AttendanceServiceTest {
     private final PositionRepository positionRepository = mock(PositionRepository.class);
     private final TenantSettingsUseCases tenantSettingsUseCases = mock(TenantSettingsUseCases.class);
     private final MonthlyAttendanceReportRenderer reportRenderer = mock(MonthlyAttendanceReportRenderer.class);
+    private final MissionUseCases missionUseCases = mock(MissionUseCases.class);
     private final AttendanceService service = new AttendanceService(
             attendanceRepository, badgeUseCases, employeeRepository, positionRepository,
-            tenantSettingsUseCases, reportRenderer);
+            tenantSettingsUseCases, reportRenderer, missionUseCases);
 
     @BeforeEach
     void setTenant() {

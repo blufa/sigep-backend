@@ -12,6 +12,7 @@ import gn.departement.sigep.common.PageResponse;
 import gn.departement.sigep.common.TenantContext;
 import gn.departement.sigep.common.exception.BusinessRuleException;
 import gn.departement.sigep.common.exception.NotFoundException;
+import gn.departement.sigep.missions.application.port.in.MissionUseCases;
 import gn.departement.sigep.platform.application.port.in.TenantSettingsUseCases;
 import gn.departement.sigep.platform.domain.Tenant;
 import gn.departement.sigep.staff.application.port.out.EmployeeRepository;
@@ -52,6 +53,7 @@ public class AttendanceService implements AttendanceUseCases {
     private final PositionRepository positionRepository;
     private final TenantSettingsUseCases tenantSettingsUseCases;
     private final MonthlyAttendanceReportRenderer reportRenderer;
+    private final MissionUseCases missionUseCases;
 
     public AttendanceService(
             AttendanceRepository attendanceRepository,
@@ -59,13 +61,15 @@ public class AttendanceService implements AttendanceUseCases {
             EmployeeRepository employeeRepository,
             PositionRepository positionRepository,
             TenantSettingsUseCases tenantSettingsUseCases,
-            MonthlyAttendanceReportRenderer reportRenderer) {
+            MonthlyAttendanceReportRenderer reportRenderer,
+            MissionUseCases missionUseCases) {
         this.attendanceRepository = attendanceRepository;
         this.badgeUseCases = badgeUseCases;
         this.employeeRepository = employeeRepository;
         this.positionRepository = positionRepository;
         this.tenantSettingsUseCases = tenantSettingsUseCases;
         this.reportRenderer = reportRenderer;
+        this.missionUseCases = missionUseCases;
     }
 
     @Override
@@ -143,7 +147,9 @@ public class AttendanceService implements AttendanceUseCases {
             Instant firstEntree = null;
             Instant lastSortie = null;
             if (punches == null || punches.isEmpty()) {
-                status = DailyStatus.ABSENT;
+                // Un employé en mission officielle ce jour-là ne doit pas être compté absent (ni
+                // déclencher la notification SMS d'absence, voir AbsenceSmsNotificationScheduler).
+                status = missionUseCases.isOnMission(employeeId, day) ? DailyStatus.EN_MISSION : DailyStatus.ABSENT;
             } else {
                 firstEntree = punches.stream()
                         .filter(p -> p.direction() == Direction.ENTREE)
@@ -247,10 +253,14 @@ public class AttendanceService implements AttendanceUseCases {
             }
         }
 
-        long absentToday = activeEmployeeIds.size() - arrivedToday.size();
+        LocalDate today = Instant.now().atZone(ZONE).toLocalDate();
+        long onMissionToday = activeEmployeeIds.stream()
+                .filter(id -> !arrivedToday.contains(id) && missionUseCases.isOnMission(id, today))
+                .count();
+        long absentToday = activeEmployeeIds.size() - arrivedToday.size() - onMissionToday;
 
         return new AttendanceSummary(
-                presentToday, activeEmployeeIds.size(), onTimeToday, lateToday, absentToday, earlyDepartureToday);
+                presentToday, activeEmployeeIds.size(), onTimeToday, lateToday, absentToday, earlyDepartureToday, onMissionToday);
     }
 
     @Override
@@ -335,7 +345,9 @@ public class AttendanceService implements AttendanceUseCases {
         for (LocalDate day : ctx.workingDays()) {
             List<AttendancePunch> dayPunches = punchesByDay.get(day);
             if (dayPunches == null || dayPunches.isEmpty()) {
-                absentDays++;
+                if (!missionUseCases.isOnMission(employee.id(), day)) {
+                    absentDays++;
+                }
                 continue;
             }
             presentDays++;
