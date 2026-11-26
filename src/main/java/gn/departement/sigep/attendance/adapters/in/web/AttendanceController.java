@@ -2,6 +2,7 @@ package gn.departement.sigep.attendance.adapters.in.web;
 
 import gn.departement.sigep.attendance.adapters.in.web.dto.AttendanceEntryResponse;
 import gn.departement.sigep.attendance.adapters.in.web.dto.AttendanceSummaryResponse;
+import gn.departement.sigep.attendance.adapters.in.web.dto.DailyStatusEntryResponse;
 import gn.departement.sigep.attendance.adapters.in.web.dto.ManualScanRequest;
 import gn.departement.sigep.attendance.adapters.in.web.dto.ScanRequest;
 import gn.departement.sigep.attendance.adapters.in.web.dto.ScanResponse;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.Base64;
 
@@ -80,6 +82,20 @@ public class AttendanceController {
         PageResponse<AttendanceUseCases.AttendanceEntry> page = useCases.history(employeeId, from, to, pageable);
         return new PageResponse<>(
                 page.items().stream().map(AttendanceEntryResponse::from).toList(),
+                page.page(), page.size(), page.totalItems(), page.totalPages());
+    }
+
+    /** Statut (présent/absent/retard) de chaque employé actif pour un jour donné — couvre aussi les
+     * employés sans aucun pointage ce jour-là (contrairement à {@link #history}, qui ne liste que
+     * des pointages réels). Alimente le filtre "Statut" de la liste des pointages. */
+    @GetMapping("/daily-status")
+    public PageResponse<DailyStatusEntryResponse> dailyStatus(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) AttendanceUseCases.DailyStatus status,
+            Pageable pageable) {
+        PageResponse<AttendanceUseCases.DailyStatusEntry> page = useCases.dailyStatus(date, status, pageable);
+        return new PageResponse<>(
+                page.items().stream().map(DailyStatusEntryResponse::from).toList(),
                 page.page(), page.size(), page.totalItems(), page.totalPages());
     }
 
